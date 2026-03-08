@@ -1,0 +1,19 @@
+{
+  "name": "two-dee-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev-debug": "vite --debug",
+    "build": "vite build",
+    "build-debug": "vite build --debug",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@raquo/vite-plugin-glob-resolver": "0.1.0",
+    "@raquo/vite-plugin-import-side-effect": "0.2.0",
+    "@scala-js/vite-plugin-scalajs": "1.1.0",
+    "vite": "7.3.1"
+  }
+}
