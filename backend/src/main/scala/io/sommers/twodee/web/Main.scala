@@ -1,0 +1,60 @@
+package io.sommers.twodee.web
+
+import cats.*
+import cats.effect.*
+import doobie.Transactor
+import io.sommers.twodee.web.config.MainConfig
+import io.sommers.twodee.web.database.Database
+import io.sommers.twodee.web.exception.NotFoundException
+import io.sommers.twodee.web.logic.DoomLogicImpl
+import io.sommers.twodee.web.route.{DoomRoute, UIRoute}
+import io.sommers.twodee.web.service.DoomService
+import org.http4s.*
+import org.http4s.dsl.io.*
+import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.server.Router
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+
+object Main extends IOApp {
+  override def run(args: List[String]): IO[ExitCode] = {
+    implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+
+    resources()
+      .use(runWith)
+  }
+
+  private def runWith(config: MainConfig, transactor: Transactor[IO])(implicit
+      loggerFactory: LoggerFactory[IO]
+  ): IO[ExitCode] = {
+    for {
+      doomService <- DoomService.create(transactor)
+      exitCode <- EmberServerBuilder
+        .default[IO]
+        .withHttpApp(
+          Router(
+            "/api" -> Router(
+              "/doom" -> DoomRoute(DoomLogicImpl(doomService)).routes
+            ),
+            "/" -> UIRoute().routes
+          ).orNotFound
+        )
+        .withErrorHandler { case NotFoundException(message) =>
+          NotFound(message)
+        }
+        .build
+        .use(_ => IO.never)
+        .as(ExitCode.Success)
+    } yield exitCode
+  }
+
+  private def resources()(implicit
+      loggerFactory: LoggerFactory[IO]
+  ): Resource[IO, (MainConfig, Transactor[IO])] = for {
+    config <- MainConfig.loadResource()
+    transactor <- Database.transactor(
+      config.databaseConfig,
+      loggerFactory.getLoggerFromName("database")
+    )
+  } yield (config, transactor)
+}
