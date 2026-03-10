@@ -55,7 +55,7 @@ object Main extends IOApp {
   ): Resource[IO, (MainConfig, Transactor[IO])] = for {
     config <- MainConfig.loadResource()
     transactor <- Database.transactor(
-      config.databaseConfig,
+      config.database,
       loggerFactory.getLoggerFromName("database")
     )
   } yield (config, transactor)

@@ -1,58 +1,36 @@
 package io.sommers.twodee.web.config
 
 import cats.effect.IO
-import ciris.ConfigValue
-import com.typesafe.config.{Config, ConfigValue as HoconConfigValue}
+import ciris.circe.yaml.circeYamlConfigDecoder
+import ciris.{ConfigDecoder, ConfigValue}
 import com.zaxxer.hikari.HikariConfig
-import lt.dvim.ciris.Hocon.hoconAt
+import io.circe.generic.auto.deriveDecoder
 
 import java.util
 import java.util.Properties
 
 case class DatabaseConfig(
-    hikariConfig: HikariConfig
-)
+  jdbcUrl: String,
+  maximumPoolSize: Option[Int],
+  minimumIdle: Option[Int],
+  connectionTimeout: Option[Long],
+  idleTimeout: Option[Long],
+  maxLifetime: Option[Long],
+  leakDetectionThreshold: Option[Long]
+) {
+  def toHikari: HikariConfig = {
+    val hikariConfig = new HikariConfig()
+    hikariConfig.setJdbcUrl(jdbcUrl)
+    maximumPoolSize.foreach(hikariConfig.setMaximumPoolSize)
+    minimumIdle.foreach(hikariConfig.setMinimumIdle)
+    connectionTimeout.foreach(hikariConfig.setConnectionTimeout)
+    idleTimeout.foreach(hikariConfig.setIdleTimeout)
+    maxLifetime.foreach(hikariConfig.setMaxLifetime)
+    leakDetectionThreshold.foreach(hikariConfig.setLeakDetectionThreshold)
+    hikariConfig
+  }
+}
 
 object DatabaseConfig {
-  def load(config: Config): ConfigValue[IO, DatabaseConfig] = {
-    val databaseHocon = hoconAt(config)("database")
-    for {
-      hikari <- databaseHocon("hikari")
-        .map(readToProperties)
-        .map(HikariConfig(_))
-    } yield DatabaseConfig(hikari)
-  }
-
-  private def readToProperties(
-      config: HoconConfigValue
-  ): Properties = {
-    val properties = new Properties()
-    readConfig(config.unwrapped(), None, properties)
-    properties
-  }
-
-  private def readConfig(
-      value: AnyRef,
-      parentOpt: Option[String],
-      properties: Properties
-  ): Unit = {
-    val pathName: String => Option[String] = child =>
-      Some(parentOpt.fold(child)(parent => s"$parent.$child"))
-    (value, parentOpt) match {
-      case (map: util.Map[_, _], parent) =>
-        map
-          .entrySet()
-          .forEach(entry =>
-            readConfig(
-              entry.getValue,
-              pathName(entry.getKey.toString),
-              properties
-            )
-          )
-      case (value, Some(parent)) =>
-        properties.put(parent, value)
-      case (value, None) =>
-        throw new IllegalArgumentException("database.hikari must be a map")
-    }
-  }
+  given ConfigDecoder[String, DatabaseConfig] = circeYamlConfigDecoder("DatabaseConfig")
 }

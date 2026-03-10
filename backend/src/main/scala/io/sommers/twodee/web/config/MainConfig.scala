@@ -2,30 +2,35 @@ package io.sommers.twodee.web.config
 
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import ciris.ConfigValue
-import com.typesafe.config.{Config, ConfigFactory}
+import ciris.*
+import ciris.circe.yaml.circeYamlConfigDecoder
+import io.circe.generic.auto.deriveDecoder
 import org.typelevel.log4cats.LoggerFactory
 
+import java.nio.file.Path
+
 case class MainConfig(
-    databaseConfig: DatabaseConfig,
-    httpConfig: HTTPConfig
+  database: DatabaseConfig,
+  http: HTTPConfig
 )
 
 object MainConfig {
+  given ConfigDecoder[String, MainConfig] = circeYamlConfigDecoder("MainConfig")
 
   def loadResource()(implicit
       loggerFactory: LoggerFactory[IO]
-  ): Resource[IO, MainConfig] = Resource.eval { load() }
+  ): Resource[IO, MainConfig] = Resource.eval {
+    parseConfig().load[IO]
+  }
 
-  def load()(implicit loggerFactory: LoggerFactory[IO]): IO[MainConfig] = for {
-    hoconConfig <- IO(ConfigFactory.load)
-    mainConfig <- load(hoconConfig).load[IO]
-  } yield mainConfig
-
-  private def load(config: Config)(implicit
+  private def parseConfig()(implicit
       loggerFactory: LoggerFactory[IO]
   ): ConfigValue[IO, MainConfig] = for {
-    httpConfig <- HTTPConfig.load(config)
-    databaseConfig <- DatabaseConfig.load(config)
-  } yield MainConfig(databaseConfig, httpConfig)
+    filePath <- prop("config.file")
+      .or(env("CONFIG_FILE"))
+      .as[String]
+      .map(Path.of(_))
+    mainConfig <- file(filePath)
+      .as[MainConfig]
+  } yield mainConfig
 }

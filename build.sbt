@@ -75,7 +75,8 @@ val catsDependencies = Seq(
 )
 val configDependencies = Seq(
   "is.cir" %% "ciris" % "3.12.0",
-  "lt.dvim.ciris-hocon" %% "ciris-hocon" % "1.3.0"
+  "is.cir" %% "ciris-circe" % "3.12.0",
+  "is.cir" %% "ciris-circe-yaml" % "3.12.0",
 )
 val databaseDependencies = Seq(
   "org.tpolecat" %% "doobie-core" % "1.0.0-RC12",

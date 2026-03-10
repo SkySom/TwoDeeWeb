@@ -13,7 +13,7 @@ object Database {
       logger: Logger[IO]
   ): Resource[IO, Transactor[IO]] =
     HikariTransactor.fromHikariConfig[IO](
-      config.hikariConfig,
+      config.toHikari,
       Some(Log4CatsDebuggingLogHandler[IO](logger))
     )
 }
