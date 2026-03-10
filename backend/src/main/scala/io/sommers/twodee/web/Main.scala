@@ -6,9 +6,9 @@ import doobie.Transactor
 import io.sommers.twodee.web.config.MainConfig
 import io.sommers.twodee.web.database.Database
 import io.sommers.twodee.web.exception.NotFoundException
-import io.sommers.twodee.web.logic.DoomLogicImpl
-import io.sommers.twodee.web.route.{DoomRoute, UIRoute}
-import io.sommers.twodee.web.service.DoomService
+import io.sommers.twodee.web.logic.DoomPoolLogicImpl
+import io.sommers.twodee.web.route.{DoomPoolRoute, UIRoute}
+import io.sommers.twodee.web.service.DoomPoolService
 import org.http4s.*
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
@@ -28,13 +28,15 @@ object Main extends IOApp {
       loggerFactory: LoggerFactory[IO]
   ): IO[ExitCode] = {
     for {
-      doomService <- DoomService.create(transactor)
+      doomService <- DoomPoolService.create(transactor)
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
           Router(
             "/api" -> Router(
-              "/doom" -> DoomRoute(DoomLogicImpl(doomService)).routes
+              "/doom-pool" -> DoomPoolRoute(
+                DoomPoolLogicImpl(doomService)
+              ).routes
             ),
             "/" -> UIRoute().routes
           ).orNotFound

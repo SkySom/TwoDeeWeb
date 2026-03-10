@@ -6,7 +6,7 @@ import doobie.*
 import doobie.free.connection.ConnectionIO
 import doobie.implicits.*
 
-trait DoomService {
+trait DoomPoolService {
   def insertDoomPool(name: String, startingDoom: Int): IO[Long]
 
   def insertDoomTransaction(
@@ -22,17 +22,17 @@ trait DoomService {
   def updateDoomPool(id: Long, name: String): IO[Int]
 }
 
-object DoomService {
-  def create(transactor: Transactor[IO]): IO[DoomService] = for {
-    _ <- DoomServiceImpl
+object DoomPoolService {
+  def create(transactor: Transactor[IO]): IO[DoomPoolService] = for {
+    _ <- DoomPoolServiceImpl
       .createTables()
       .transact(transactor)
-  } yield DoomServiceImpl(transactor)
+  } yield DoomPoolServiceImpl(transactor)
 }
 
-class DoomServiceImpl(
+class DoomPoolServiceImpl(
     transactor: Transactor[IO]
-) extends DoomService {
+) extends DoomPoolService {
 
   override def insertDoomPool(name: String, startingDoom: Int): IO[Long] = {
     insertDoomPoolSQL(name, startingDoom).transact(transactor)
@@ -95,7 +95,7 @@ class DoomServiceImpl(
   }
 }
 
-object DoomServiceImpl {
+object DoomPoolServiceImpl {
   def createTables(): ConnectionIO[Int] = (
     createDoomPoolTable,
     createDoomTransactionTable,

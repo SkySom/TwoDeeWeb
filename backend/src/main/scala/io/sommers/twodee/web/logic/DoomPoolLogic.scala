@@ -1,16 +1,17 @@
 package io.sommers.twodee.web.logic
 
 import cats.effect.IO
+import io.sommers.twodee.web.exception.NotFoundException
 import io.sommers.twodee.web.model.{DoomPool, DoomPoolCreate, DoomPoolUpdate}
-import io.sommers.twodee.web.service.DoomService
+import io.sommers.twodee.web.service.DoomPoolService
 import io.sommers.twodee.web.util.TwoDeeIO
 
-trait DoomLogic {
+trait DoomPoolLogic {
   def createDoomPool(doomPoolCreate: DoomPoolCreate): IO[DoomPool]
 
   def listDoomPool(): IO[List[DoomPool]]
 
-  def addDoomToPool(
+  def createDoomPoolTransaction(
       doomPoolId: Long,
       amount: Int,
       note: Option[String]
@@ -21,32 +22,34 @@ trait DoomLogic {
       doomPoolUpdate: DoomPoolUpdate
   ): IO[Option[DoomPool]]
 
-  def getById(id: Long): IO[Option[DoomPool]]
+  def getOptionalById(id: Long): IO[Option[DoomPool]]
+
+  def getById(id: Long): IO[DoomPool]
 }
 
-case class DoomLogicImpl(
-    doomService: DoomService
-) extends DoomLogic {
+case class DoomPoolLogicImpl(
+    doomPoolService: DoomPoolService
+) extends DoomPoolLogic {
 
   override def createDoomPool(
       doomPoolCreate: DoomPoolCreate
   ): IO[DoomPool] =
-    doomService
+    doomPoolService
       .insertDoomPool(doomPoolCreate.name, 0)
       .map(id => DoomPool(id, doomPoolCreate.name, 0))
 
   override def listDoomPool(): IO[List[DoomPool]] =
-    doomService
+    doomPoolService
       .listDoomPools()
       .map(_.map(DoomPool.apply))
 
-  override def addDoomToPool(
+  override def createDoomPoolTransaction(
       doomPoolId: Long,
       amount: Int,
       note: Option[String]
   ): IO[DoomPool] = for {
-    _ <- doomService.insertDoomTransaction(doomPoolId, amount, note)
-    pool <- doomService
+    _ <- doomPoolService.insertDoomTransaction(doomPoolId, amount, note)
+    pool <- doomPoolService
       .getDoomPool(doomPoolId)
       .map(
         _.map(DoomPool.apply).getOrElse(
@@ -60,16 +63,22 @@ case class DoomLogicImpl(
       doomPoolUpdate: DoomPoolUpdate
   ): IO[Option[DoomPool]] = {
     for {
-      updatedCount <- doomService.updateDoomPool(id, doomPoolUpdate.name.get)
+      updatedCount <- doomPoolService.updateDoomPool(
+        id,
+        doomPoolUpdate.name.get
+      )
       updatedPool <- TwoDeeIO.when(updatedCount > 0)(
-        doomService.getDoomPool(id),
+        doomPoolService.getDoomPool(id),
         None
       )
     } yield updatedPool.map(DoomPool.apply)
   }
 
-  override def getById(id: Long): IO[Option[DoomPool]] =
-    doomService
+  override def getOptionalById(id: Long): IO[Option[DoomPool]] =
+    doomPoolService
       .getDoomPool(id)
       .map(_.map(DoomPool.apply))
+
+  override def getById(id: Long): IO[DoomPool] = getOptionalById(id)
+    .flatMap(IO.fromOption(_)(NotFoundException(s"No Doom Pool with id $id")))
 }
