@@ -1,16 +1,16 @@
 package io.sommers.twodee.web.frontend
 
 import com.raquo.laminar.api.L.*
+import io.sommers.twodee.web.frontend.TwoDeeHtmlKeys.onSuccess
 import org.scalajs.dom
 
 object JsApp {
   def main(args: Array[String]): Unit = {
     lazy val container = dom.document.getElementById("root")
 
-    val eventsVar = Var("")
+    println("-- Scala.js app start --")
 
-    val tickStream = EventStream.periodic(10000)
-      .flatMapTo(FetchStream.get("/api/doom"))
+    val googleStatus = Var("Google: Not Ready")
 
     lazy val appElement = {
       div(
@@ -23,7 +23,11 @@ object JsApp {
           h2("Also Hello World?")
         ),
         div(
-          text <-- tickStream
+          cls := "g-signin2",
+          onSuccess := "onSignIn"
+        ),
+        div(
+          text <-- googleStatus
         )
       )
     }

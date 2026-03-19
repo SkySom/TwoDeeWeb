@@ -38,7 +38,12 @@ export default defineConfig({
     },
     server: {
         port: 3000,
+        allowedHosts: ['relaxing-sponge-cuddly.ngrok-free.app'],
         strictPort: true,
+        headers: {
+            "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+            "Cross-Origin-Embedder-Policy": "unsafe-none"
+        },
         proxy: {
             "/api": {
                 target: "http://127.0.0.1:8080",

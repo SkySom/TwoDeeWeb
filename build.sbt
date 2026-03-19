@@ -14,7 +14,7 @@ lazy val backend = (project in file("./backend"))
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "org.fusesource.jansi" % "jansi" % "2.4.2"
-    ) ++ catsDependencies ++ configDependencies ++ databaseDependencies ++ http4sDependencies
+    ) ++ catsDependencies ++ configDependencies ++ databaseDependencies ++ http4sDependencies ++ oauthDependencies
   )
 
 lazy val frontend = (project in file("./frontend"))
@@ -29,7 +29,8 @@ lazy val frontend = (project in file("./frontend"))
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.http4s" %%% "http4s-circe" % http4sVersion,
       "org.http4s" %%% "http4s-dom" % "0.2.12",
-      "com.raquo" %%% "laminar" % "17.2.1"
+      "com.raquo" %%% "laminar" % "17.2.1",
+      "com.raquo" %%% "waypoint" % "10.0.0-M1"
     ),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
@@ -90,4 +91,8 @@ val http4sDependencies = Seq(
   "org.http4s" %% "http4s-circe" % http4sVersion,
   "io.circe" %% "circe-generic" % "0.14.15",
   "org.http4s" %% "http4s-dsl" % http4sVersion
+)
+val oauthDependencies = Seq(
+  "com.google.oauth-client" % "google-oauth-client" % "1.39.0",
+  "com.google.auth" % "google-auth-library-oauth2-http" % "1.43.0"
 )
