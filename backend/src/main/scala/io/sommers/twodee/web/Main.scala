@@ -5,9 +5,9 @@ import cats.effect.*
 import doobie.Transactor
 import io.sommers.twodee.web.config.MainConfig
 import io.sommers.twodee.web.database.Database
-import io.sommers.twodee.web.exception.NotFoundException
-import io.sommers.twodee.web.logic.DoomPoolLogicImpl
-import io.sommers.twodee.web.route.{DoomPoolRoute, UIRoute}
+import io.sommers.twodee.web.exception.{InvalidTokenException, NotFoundException}
+import io.sommers.twodee.web.logic.{DoomPoolLogicImpl, GoogleLogic}
+import io.sommers.twodee.web.route.{DoomPoolRoute, GoogleRoute, UIRoute}
 import io.sommers.twodee.web.service.DoomPoolService
 import org.http4s.*
 import org.http4s.dsl.io.*
@@ -36,13 +36,18 @@ object Main extends IOApp {
             "/api" -> Router(
               "/doom-pool" -> DoomPoolRoute(
                 DoomPoolLogicImpl(doomService)
+              ).routes,
+              "/google" -> GoogleRoute(
+                config.oauth.google,
+                GoogleLogic(config.oauth.google)
               ).routes
             ),
             "/" -> UIRoute().routes
           ).orNotFound
         )
-        .withErrorHandler { case NotFoundException(message) =>
-          NotFound(message)
+        .withErrorHandler {
+          case NotFoundException(message) => NotFound(message)
+          case InvalidTokenException(message) => Forbidden(message)
         }
         .build
         .use(_ => IO.never)

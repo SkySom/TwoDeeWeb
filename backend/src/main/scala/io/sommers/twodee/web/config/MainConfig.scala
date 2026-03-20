@@ -11,7 +11,8 @@ import java.nio.file.Path
 
 case class MainConfig(
   database: DatabaseConfig,
-  http: HTTPConfig
+  http: HTTPConfig,
+  oauth: OAuthConfig
 )
 
 object MainConfig {
