@@ -5,10 +5,23 @@ import cats.effect.*
 import doobie.Transactor
 import io.sommers.twodee.web.config.MainConfig
 import io.sommers.twodee.web.database.Database
-import io.sommers.twodee.web.exception.{InvalidTokenException, NotFoundException}
-import io.sommers.twodee.web.logic.{DoomPoolLogicImpl, GoogleLogic}
-import io.sommers.twodee.web.route.{DoomPoolRoute, GoogleRoute, UIRoute}
-import io.sommers.twodee.web.service.DoomPoolService
+import io.sommers.twodee.web.exception.{
+  InvalidTokenException,
+  NotFoundException
+}
+import io.sommers.twodee.web.logic.{
+  AuthLogic,
+  DoomPoolLogicImpl,
+  GoogleLogic,
+  UserLogic
+}
+import io.sommers.twodee.web.route.{
+  DoomPoolRoute,
+  GoogleRoute,
+  UIRoute,
+  UserRoute
+}
+import io.sommers.twodee.web.service.{DoomPoolService, UserService}
 import org.http4s.*
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
@@ -29,6 +42,9 @@ object Main extends IOApp {
   ): IO[ExitCode] = {
     for {
       doomService <- DoomPoolService.create(transactor)
+      userService <- UserService.create(transactor)
+      userLogic <- IO.pure(UserLogic(userService))
+      authLogic <- IO.pure(AuthLogic(config.auth, userLogic))
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
@@ -38,15 +54,21 @@ object Main extends IOApp {
                 DoomPoolLogicImpl(doomService)
               ).routes,
               "/google" -> GoogleRoute(
-                config.oauth.google,
-                GoogleLogic(config.oauth.google)
+                config.auth.google,
+                GoogleLogic(config.auth.google),
+                userLogic,
+                authLogic
+              ).routes,
+              "/user" -> UserRoute(
+                userLogic,
+                authLogic
               ).routes
             ),
             "/" -> UIRoute().routes
           ).orNotFound
         )
         .withErrorHandler {
-          case NotFoundException(message) => NotFound(message)
+          case NotFoundException(message)     => NotFound(message)
           case InvalidTokenException(message) => Forbidden(message)
         }
         .build

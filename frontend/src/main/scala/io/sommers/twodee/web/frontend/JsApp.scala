@@ -1,29 +1,22 @@
 package io.sommers.twodee.web.frontend
 
 import com.raquo.laminar.api.L.*
-import io.circe.generic.auto.*
-import io.circe.parser
 import io.sommers.twodee.web.frontend.elements.Navbar
 import io.sommers.twodee.web.frontend.login.LoginElement
 import io.sommers.twodee.web.frontend.storage.LoginInfoStorage
-import io.sommers.twodee.web.model.response.WhoAmIResponse
-import io.sommers.twodee.web.model.user.{LoggedInUser, User}
+import io.sommers.twodee.web.model.user.LoggedInUser
 import org.scalajs.dom
+import sttp.client4.WebSocketBackend
 import sttp.client4.fetch.FetchBackend
-import sttp.client4.{Backend, UriContext, WebSocketBackend, basicRequest}
 
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, Future}
-import scala.scalajs.js.await
-import scala.util.Try
+import scala.concurrent.Future
 
 object JsApp {
   def main(args: Array[String]): Unit = {
 
     implicit val backend: WebSocketBackend[Future] = FetchBackend()
 
-    implicit val loggedInUser: Var[Option[LoggedInUser]] =
-      LoginInfoStorage.getLoggedInUserVar()
+    implicit val loggedInUser: Var[Option[LoggedInUser]] = Var(None)
 
     renderApp()
   }

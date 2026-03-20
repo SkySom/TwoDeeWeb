@@ -23,12 +23,14 @@ object GoogleLogic {
 
 case class GoogleToken(
     sub: String,
-    image: Option[String]
+    image: Option[String],
+    name: Option[String]
 )
 
 case class GoogleLogicImpl(
     googleOAuthConfig: GoogleOAuthConfig
 ) extends GoogleLogic {
+  
   private val httpTransport: HttpTransport =
     GoogleApacheHttpTransport.newTrustedTransport()
   private val jsonFactory: JsonFactory = GsonFactory.getDefaultInstance
@@ -46,6 +48,8 @@ case class GoogleLogicImpl(
         GoogleToken(
           payload.getSubject,
           Option(payload.get("picture"))
+            .map(_.toString),
+          Option(payload.get("name"))
             .map(_.toString)
         )
       } else {

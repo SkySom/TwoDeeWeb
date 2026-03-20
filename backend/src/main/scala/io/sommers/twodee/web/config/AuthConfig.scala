@@ -5,7 +5,8 @@ import ciris.{ConfigError, ConfigValue}
 
 import java.nio.file.Path
 
-case class OAuthConfig(
+case class AuthConfig(
+    secretKey: String,
     google: GoogleOAuthConfig
 ) {}
 
