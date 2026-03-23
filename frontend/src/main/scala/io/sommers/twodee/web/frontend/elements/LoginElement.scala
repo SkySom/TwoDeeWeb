@@ -1,14 +1,15 @@
-package io.sommers.twodee.web.frontend.login
+package io.sommers.twodee.web.frontend.elements
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import io.circe.generic.auto.*
 import io.circe.parser.decode
 import io.circe.syntax.*
+import io.sommers.twodee.web.frontend.model.LoggedInUser
 import io.sommers.twodee.web.model.GoogleInfo
 import io.sommers.twodee.web.model.request.LoginRequest
 import io.sommers.twodee.web.model.response.LoginResponse
-import io.sommers.twodee.web.model.user.{LoggedInUser, User}
+import io.sommers.twodee.web.model.user.User
 import org.scalajs.dom.{BodyInit, HTMLDivElement, Response}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.*
 import sttp.client4.*
@@ -27,7 +28,6 @@ import scala.scalajs.js.JSON
 
 object LoginElement {
   def getLoginElement()(implicit
-      userVar: Var[Option[LoggedInUser]],
       backend: WebSocketBackend[Future]
   ): ReactiveHtmlElement[HTMLDivElement] = {
     implicit val buttonDiv: ReactiveHtmlElement[HTMLDivElement] = div(
@@ -67,8 +67,7 @@ object LoginElement {
       googleInfo: Either[io.circe.Error, GoogleInfo]
   )(implicit
       buttonDiv: ReactiveHtmlElement[HTMLDivElement],
-      backend: WebSocketBackend[Future],
-      userVar: Var[Option[LoggedInUser]]
+      backend: WebSocketBackend[Future]
   ) = {
     googleInfo.fold(
       error =>
@@ -90,7 +89,7 @@ object LoginElement {
                   decode[LoginResponse](right).fold(
                     error => println(error.getMessage),
                     loginResponse => {
-                      userVar.set(Some(loginResponse.user))
+                      LoggedInUser.storageVar.set(Some(LoggedInUser(loginResponse.token, loginResponse.user)))
                     }
                   )
                 }

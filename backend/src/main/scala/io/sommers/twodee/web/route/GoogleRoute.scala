@@ -3,11 +3,15 @@ package io.sommers.twodee.web.route
 import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.config.GoogleOAuthConfig
-import io.sommers.twodee.web.logic.{AuthLogic, GoogleLogic, UserCreate, UserLogic}
+import io.sommers.twodee.web.logic.{
+  AuthLogic,
+  GoogleLogic,
+  UserCreate,
+  UserLogic
+}
 import io.sommers.twodee.web.model.GoogleInfo
 import io.sommers.twodee.web.model.request.LoginRequest
 import io.sommers.twodee.web.model.response.LoginResponse
-import io.sommers.twodee.web.model.user.LoggedInUser
 import org.http4s.*
 import org.http4s.circe.CirceEntityDecoder.circeEntityDecoder
 import org.http4s.circe.CirceEntityEncoder.*
@@ -41,10 +45,8 @@ case class GoogleRoute(
       token <- authLogic.createToken(user.id.toString)
       response <- Ok(
         LoginResponse(
-          LoggedInUser(
-            token,
-            user
-          )
+          token,
+          user
         )
       )
     } yield response
