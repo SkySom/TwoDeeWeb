@@ -9,7 +9,6 @@ import org.scalajs.dom.HTMLElement
 
 object Navbar {
   def apply(): ReactiveHtmlElement[HTMLElement] = {
-
     navTag(
       cls := "navbar navbar-expand-lg navbar-dark bg-dark",
       padding := "0",
@@ -63,10 +62,19 @@ object Navbar {
                         i(
                           cls := "fas fa-sign-out-alt fa-fw"
                         ),
-                        onClick.preventDefault --> (_ => {
-                          LoggedInUser.storageVar.set(None)
-                          PageRouter.pushState(LoginPage)
-                        }),
+                        onClick.flatMap(event => {
+                          event.preventDefault()
+                          FetchStream(
+                            _.DELETE,
+                            "/api/auth/token",
+                            _.headers(
+                              "Authorization" -> s"Bearer ${loggedInUser.token}"
+                            )
+                          ).map(_ => {
+                            PageRouter.pushState(LoginPage)
+                            None
+                          })
+                        }) --> LoggedInUser.storageVar.toObserver,
                         "Log Out"
                       )
                     )
