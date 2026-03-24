@@ -31,8 +31,7 @@ lazy val frontend = (project in file("./frontend"))
       "com.softwaremill.sttp.client4" %%% "circe" % sttpVersion,
       "org.scala-js" %%% "scala-js-macrotask-executor" % "1.1.1",
       "com.raquo" %%% "laminar" % "17.2.1",
-      "com.raquo" %%% "waypoint" % "10.0.0-M1",
-      "com.lihaoyi" %% "upickle" % "4.4.3"
+      "com.raquo" %%% "waypoint" % "10.0.0-M1"
     ),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)

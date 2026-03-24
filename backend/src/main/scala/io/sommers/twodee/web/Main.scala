@@ -5,10 +5,19 @@ import cats.effect.*
 import doobie.Transactor
 import io.sommers.twodee.web.config.MainConfig
 import io.sommers.twodee.web.database.Database
-import io.sommers.twodee.web.exception.{EndpointException, InvalidTokenException, NotFoundException}
-import io.sommers.twodee.web.logic.{AuthLogic, DoomPoolLogicImpl, GoogleLogic, UserLogic}
-import io.sommers.twodee.web.route.{DoomPoolRoute, GoogleRoute, UIRoute, UserRoute}
-import io.sommers.twodee.web.service.{AuthTokenService, DoomPoolService, UserService}
+import io.sommers.twodee.web.exception.{
+  EndpointException,
+  InvalidTokenException,
+  NotFoundException
+}
+import io.sommers.twodee.web.logic.*
+import io.sommers.twodee.web.route.*
+import io.sommers.twodee.web.service.{
+  AuthTokenService,
+  DoomPoolService,
+  GameService,
+  UserService
+}
 import org.http4s.*
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
@@ -30,9 +39,11 @@ object Main extends IOApp {
     for {
       doomService <- DoomPoolService.create(transactor)
       userService <- UserService.create(transactor)
+      gameService <- GameService(transactor)
       userLogic <- IO.pure(UserLogic(userService))
       authTokenService <- AuthTokenService(transactor)
       authLogic <- IO.pure(AuthLogic(config.auth, userLogic, authTokenService))
+      gameLogic <- IO.pure(GameLogic(gameService))
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
@@ -40,6 +51,10 @@ object Main extends IOApp {
             "/api" -> Router(
               "/doom-pool" -> DoomPoolRoute(
                 DoomPoolLogicImpl(doomService)
+              ).routes,
+              "/game" -> GameRoute(
+                authLogic,
+                gameLogic
               ).routes,
               "/google" -> GoogleRoute(
                 config.auth.google,
@@ -58,7 +73,7 @@ object Main extends IOApp {
         .withErrorHandler {
           case NotFoundException(message)     => NotFound(message)
           case InvalidTokenException(message) => Forbidden(message)
-          case e: EndpointException => e.asResponse
+          case e: EndpointException           => e.asResponse
         }
         .build
         .use(_ => IO.never)

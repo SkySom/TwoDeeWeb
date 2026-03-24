@@ -18,7 +18,7 @@ object Page {
   private implicit val backend: WebSocketBackend[Future] = FetchBackend()
 
   val pageSplitter: SplitRender[Page, HtmlElement] =
-    SplitRender[Page, ReactiveHtmlElement[_]](PageRouter.currentPageSignal)
+    SplitRender[Page, HtmlElement](PageRouter.currentPageSignal)
       .collectSignal[GamePage](gamePageSignal =>
         GamePage.renderGamePage(gamePageSignal)
       )
