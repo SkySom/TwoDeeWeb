@@ -5,23 +5,10 @@ import cats.effect.*
 import doobie.Transactor
 import io.sommers.twodee.web.config.MainConfig
 import io.sommers.twodee.web.database.Database
-import io.sommers.twodee.web.exception.{
-  InvalidTokenException,
-  NotFoundException
-}
-import io.sommers.twodee.web.logic.{
-  AuthLogic,
-  DoomPoolLogicImpl,
-  GoogleLogic,
-  UserLogic
-}
-import io.sommers.twodee.web.route.{
-  DoomPoolRoute,
-  GoogleRoute,
-  UIRoute,
-  UserRoute
-}
-import io.sommers.twodee.web.service.{DoomPoolService, UserService}
+import io.sommers.twodee.web.exception.{EndpointException, InvalidTokenException, NotFoundException}
+import io.sommers.twodee.web.logic.{AuthLogic, DoomPoolLogicImpl, GoogleLogic, UserLogic}
+import io.sommers.twodee.web.route.{DoomPoolRoute, GoogleRoute, UIRoute, UserRoute}
+import io.sommers.twodee.web.service.{AuthTokenService, DoomPoolService, UserService}
 import org.http4s.*
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
@@ -44,7 +31,8 @@ object Main extends IOApp {
       doomService <- DoomPoolService.create(transactor)
       userService <- UserService.create(transactor)
       userLogic <- IO.pure(UserLogic(userService))
-      authLogic <- IO.pure(AuthLogic(config.auth, userLogic))
+      authTokenService <- AuthTokenService(transactor)
+      authLogic <- IO.pure(AuthLogic(config.auth, userLogic, authTokenService))
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
@@ -70,6 +58,7 @@ object Main extends IOApp {
         .withErrorHandler {
           case NotFoundException(message)     => NotFound(message)
           case InvalidTokenException(message) => Forbidden(message)
+          case e: EndpointException => e.asResponse
         }
         .build
         .use(_ => IO.never)
