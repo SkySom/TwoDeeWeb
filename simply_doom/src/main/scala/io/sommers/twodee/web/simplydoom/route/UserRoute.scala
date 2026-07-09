@@ -50,7 +50,7 @@ private case class UserRoute(
       userRequest <- value.req.as[UserRequest]
       user <- userLogic.createUser(
         userRequest.name,
-        userRequest.plotPermission,
+        userRequest.characterPermissions,
         userRequest.doomPermission,
         userRequest.userPermission,
         userRequest.tokenPermission,

@@ -28,13 +28,13 @@ trait UserService {
   ]]
 
   def createUser(
-      name: String,
-      plotPermission: Permission,
-      doomPermission: Permission,
-      userPermission: Permission,
-      tokenPermission: Permission,
-      notes: String,
-      createdBy: Option[Long]
+    name: String,
+    characterPermission: Permission,
+    doomPermission: Permission,
+    userPermission: Permission,
+    tokenPermission: Permission,
+    notes: String,
+    createdBy: Option[Long]
   ): IO[Long]
 
   def deleteUser(id: Long): IO[Int]
@@ -79,7 +79,7 @@ case class UserServiceImpl(
         Option[Long]
     )
   ]] =
-    sql"select id, name, plot_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user where id = $id"
+    sql"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user where id = $id"
       .query[
         (
             Long,
@@ -97,16 +97,16 @@ case class UserServiceImpl(
       .transact(transactor)
 
   override def createUser(
-      name: String,
-      plotPermission: Permission,
-      doomPermission: Permission,
-      userPermission: Permission,
-      tokenPermission: Permission,
-      notes: String,
-      createdBy: Option[Long]
+    name: String,
+    characterPermission: Permission,
+    doomPermission: Permission,
+    userPermission: Permission,
+    tokenPermission: Permission,
+    notes: String,
+    createdBy: Option[Long]
   ): IO[Long] =
-    sql""" INSERT INTO user(name, plot_permissions, doom_permissions, user_permissions, token_permissions, notes, created_by)
-         | VALUES ($name, $plotPermission, $doomPermission, $userPermission, $tokenPermission, $notes, $createdBy)
+    sql""" INSERT INTO user(name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, created_by)
+         | VALUES ($name, $characterPermission, $doomPermission, $userPermission, $tokenPermission, $notes, $createdBy)
           """.stripMargin.update
       .withUniqueGeneratedKeys[Long]("id")
       .transact(transactor)
@@ -129,7 +129,7 @@ case class UserServiceImpl(
     )
   ]] = {
     var query =
-      fr"select id, name, plot_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user"
+      fr"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user"
 
     val queryFilters = new ArrayBuffer[Fragment]()
 
@@ -179,7 +179,7 @@ object UserServiceImpl {
          | CREATE TABLE IF NOT EXISTS user(
          |  id INTEGER PRIMARY KEY,
          |  name VARCHAR NOT NULL,
-         |  plot_permissions VARCHAR NOT NULL DEFAULT '',
+         |  character_permissions VARCHAR NOT NULL DEFAULT '',
          |  doom_permissions VARCHAR NOT NULL DEFAULT '',
          |  user_permissions VARCHAR NOT NULL DEFAULT '',
          |  token_permissions VARCHAR NOT NULL DEFAULT '',

@@ -8,7 +8,7 @@ import io.sommers.twodee.web.simplydoom.service.UserService
 trait UserLogic {
   def createUser(
       name: String,
-      plotPermission: Permission,
+      characterPermissions: Permission,
       doomPermission: Permission,
       userPermission: Permission,
       tokenPermission: Permission,
@@ -34,17 +34,17 @@ case class UserLogicImpl(
 ) extends UserLogic {
 
   override def createUser(
-      name: String,
-      plotPermission: Permission,
-      doomPermission: Permission,
-      userPermission: Permission,
-      tokenPermission: Permission,
-      notes: String,
-      createdBy: Option[Long]
+    name: String,
+    characterPermission: Permission,
+    doomPermission: Permission,
+    userPermission: Permission,
+    tokenPermission: Permission,
+    notes: String,
+    createdBy: Option[Long]
   ): IO[User] = userService
     .createUser(
       name,
-      plotPermission,
+      characterPermission,
       doomPermission,
       userPermission,
       tokenPermission,

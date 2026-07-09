@@ -4,13 +4,17 @@ import cats.effect.IO
 import dev.profunktor.auth.jwt.{JwtAuth, JwtToken, jwtEncode}
 import dev.profunktor.auth.{JwtAuthMiddleware, jwt}
 import io.sommers.twodee.web.simplydoom.AuthConfig
-import io.sommers.twodee.web.simplydoom.exception.{InvalidFieldException, InvalidTokenException, NotFoundException}
-import io.sommers.twodee.web.simplydoom.model.{Permission, Token, User}
+import io.sommers.twodee.web.simplydoom.exception.{
+  InvalidFieldException,
+  InvalidTokenException,
+  NotFoundException
+}
+import io.sommers.twodee.web.simplydoom.model.Token
 import io.sommers.twodee.web.simplydoom.service.TokenService
 import org.http4s.server.AuthMiddleware
 import pdi.jwt.{JwtAlgorithm, JwtClaim}
 
-import java.time.{Clock, Instant}
+import java.time.Clock
 
 trait TokenLogic {
   def authenticate: JwtToken => JwtClaim => IO[Option[Token]]

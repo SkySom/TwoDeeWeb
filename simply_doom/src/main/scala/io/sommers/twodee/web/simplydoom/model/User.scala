@@ -3,7 +3,7 @@ package io.sommers.twodee.web.simplydoom.model
 case class User(
     id: Long,
     name: String,
-    plotPermission: Permission,
+    characterPermissions: Permission,
     doomPermission: Permission,
     userPermission: Permission,
     tokenPermission: Permission,
@@ -14,7 +14,7 @@ case class User(
 
 case class UserRequest(
   name: String,
-  plotPermission: Permission,
+  characterPermissions: Permission,
   doomPermission: Permission,
   userPermission: Permission,
   tokenPermission: Permission,
