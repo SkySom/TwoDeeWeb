@@ -12,3 +12,7 @@ database:
   maxLifetime: 30000
 
   leakDetectionThreshold: 5000
+
+google:
+  credentialPath: "tmp/credentials.json"
+  datastorePath: "tmp/datastore"

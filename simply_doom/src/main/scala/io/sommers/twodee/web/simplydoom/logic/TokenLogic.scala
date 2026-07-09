@@ -104,18 +104,18 @@ case class TokenLogicImpl(
   ): IO[Option[Token]] = {
     for {
       jwtId <- IO.fromOption(claim.jwtId.flatMap(_.toLongOption))(
-        throw InvalidTokenException("Invalid access token")
+        throw InvalidTokenException()
       )
       token <- this.getToken(jwtId)
         .flatMap(token =>
           if (token.active) {
             IO.pure(token)
           } else {
-            IO.raiseError(InvalidTokenException("Invalid access token"))
+            IO.raiseError(InvalidTokenException())
           }
         )
         .handleErrorWith { case e: NotFoundException =>
-          IO.raiseError(InvalidTokenException("Invalid access token"))
+          IO.raiseError(InvalidTokenException())
         }
     } yield Some(token)
   }

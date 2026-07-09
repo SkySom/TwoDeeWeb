@@ -5,6 +5,7 @@ import cats.effect.kernel.Resource
 import ciris.*
 import ciris.circe.yaml.circeYamlConfigDecoder
 import com.zaxxer.hikari.HikariConfig
+import io.circe.Decoder
 import io.circe.generic.auto.deriveDecoder
 import org.typelevel.log4cats.LoggerFactory
 
@@ -13,7 +14,8 @@ import java.nio.file.Path
 case class DoomConfig(
     database: DatabaseConfig,
     http: HTTPConfig,
-    auth: AuthConfig
+    auth: AuthConfig,
+    google: GoogleConfig
 )
 
 object DoomConfig {
@@ -72,3 +74,14 @@ case class AuthConfig(
 case class HTTPConfig(
     port: Int
 )
+
+case class GoogleConfig(
+    credentialPath: String,
+    datastorePath: String
+)
+
+object GoogleConfig {
+  given ConfigDecoder[String, GoogleConfig] = circeYamlConfigDecoder(
+    "GoogleConfig"
+  )
+}

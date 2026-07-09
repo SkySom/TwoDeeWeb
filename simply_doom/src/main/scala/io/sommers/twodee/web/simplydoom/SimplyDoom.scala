@@ -4,14 +4,16 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import doobie.Transactor
 import doobie.hikari.HikariTransactor
 import doobie.log4cats.Log4CatsDebuggingLogHandler
-import io.sommers.twodee.web.simplydoom.exception.{InvalidFieldException, InvalidTokenException, MissingPermissionException, NotFoundException}
-import io.sommers.twodee.web.simplydoom.logic.{DoomPoolLogic, TokenLogic, UserLogic}
+import fs2.Stream
+import io.sommers.twodee.web.simplydoom.exception.{InvalidFieldException, InvalidTokenException, MissingPermissionException, NotFoundException, SheetException}
+import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, DoomPoolLogic, TokenLogic, UserLogic}
 import io.sommers.twodee.web.simplydoom.model.AllowAllPermission
-import io.sommers.twodee.web.simplydoom.route.{DoomPoolRoute, TokenRoute, UserRoute}
-import io.sommers.twodee.web.simplydoom.service.{DoomPoolService, TokenService, UserService}
+import io.sommers.twodee.web.simplydoom.route.{CharacterRoute, DoomPoolRoute, TokenRoute, UserRoute}
+import io.sommers.twodee.web.simplydoom.service.*
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
+import org.http4s.{Response, Status}
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 
@@ -38,20 +40,52 @@ object SimplyDoom extends IOApp {
       _ <- checkMaster(tokenLogic, userLogic)(logger)
       doomPoolService <- DoomPoolService(transactor)
       doomPoolLogic <- IO.pure(DoomPoolLogic(doomPoolService))
+      sheetsService <- SheetsService(config)
+      characterService <- CharacterService(transactor)
+      characterLogic <- IO.pure(CharacterLogic(characterService, sheetsService))
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
           Router(
             "/user" -> UserRoute(tokenLogic, userLogic),
             "/token" -> TokenRoute(tokenLogic, userLogic),
-            "/doompool" -> DoomPoolRoute(tokenLogic, doomPoolLogic)
+            "/doompool" -> DoomPoolRoute(tokenLogic, doomPoolLogic),
+            "/character" -> CharacterRoute(tokenLogic, characterLogic, userLogic)
           ).orNotFound
         )
         .withErrorHandler {
-          case MissingPermissionException(message) => Forbidden()
+          case MissingPermissionException(message) =>
+            IO.pure(
+              Response(
+                status = Status.Forbidden,
+                body = Stream.emits(message.getBytes().toSeq)
+              )
+            )
           case _: NotFoundException => NotFound()
-          case _: InvalidTokenException => Forbidden()
-          case _: InvalidFieldException => BadRequest()
+          case InvalidTokenException(message) =>
+            IO.pure(
+              Response(
+                status = Status.Forbidden,
+                body = Stream.emits(message.getBytes().toSeq)
+              )
+            )
+          case SheetException(message) =>
+            IO.pure(
+              Response(
+                status = Status.InternalServerError,
+                body = Stream.emits(message.getBytes().toSeq)
+              )
+            )
+          case InvalidFieldException(message) => IO.pure(
+            Response(
+              status = Status.BadRequest,
+              body = Stream.emits(message.getBytes().toSeq)
+            )
+          )
+          case e: Exception => for {
+            _ <- logger.error(e)("Ran into Issue")
+            response <- InternalServerError()
+          } yield response
         }
         .build
         .use(_ => IO.never)

@@ -4,7 +4,7 @@ val circeVersion = "0.14.16"
 val http4sVersion = "0.23.34"
 val logbackVersion = "1.5.37"
 val sttpVersion = "4.0.19"
-val calibanVersion = "3.1.2"
+val calibanVersion = "3.1.4"
 
 lazy val backend = (project in file("./backend"))
   .dependsOn(shared.jvm)
@@ -75,8 +75,11 @@ lazy val simplyDoom = (project in file("simply_doom"))
     name := "TwoDeeWeb Simply Doom",
     version := "0.0.1-SNAPSHOT",
     scalaVersion := "3.3.7",
-    libraryDependencies ++= logbackDependencies ++ http4sDependencies ++ databaseDependencies ++ configDependencies ++ 
-      circeDependencies
+    libraryDependencies ++= logbackDependencies ++ http4sDependencies ++ databaseDependencies ++ configDependencies ++
+      circeDependencies ++ googleDependencies ++ Seq(
+        "com.google.oauth-client" % "google-oauth-client-jetty" % "1.39.0",
+        "com.evolution" %% "scache" % "5.1.2"
+      )
   )
 
 lazy val root = (project in file("."))
@@ -116,7 +119,8 @@ val circeDependencies = Seq(
   "io.circe" %% "circe-parser" % circeVersion
 )
 val googleDependencies = Seq(
-  "com.google.api-client" % "google-api-client" % "2.9.0"
+  "com.google.api-client" % "google-api-client" % "2.9.0",
+  "com.google.apis" % "google-api-services-sheets" % "v4-rev20260610-2.0.0"
 )
 
 val calibanDependencies = Seq(
