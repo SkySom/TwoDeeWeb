@@ -4,17 +4,11 @@ import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{DoomPoolLogic, TokenLogic}
-import io.sommers.twodee.web.simplydoom.model.{DoomPoolRequest, Token}
+import io.sommers.twodee.web.simplydoom.model.{DoomPoolRequest, DoomUpdateRequest, DoomUpdateResponse, Token}
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
-import org.http4s.{
-  AuthedRequest,
-  AuthedRoutes,
-  EntityDecoder,
-  HttpRoutes,
-  Response
-}
+import org.http4s.{AuthedRequest, AuthedRoutes, EntityDecoder, HttpRoutes, Response}
 
 private case class DoomPoolRoute(
     tokenLogic: TokenLogic,
@@ -23,11 +17,15 @@ private case class DoomPoolRoute(
   implicit val doomRequestDecoder: EntityDecoder[IO, DoomPoolRequest] =
     jsonOf[IO, DoomPoolRequest]
 
+  implicit val doomUpdateRequestDecode: EntityDecoder[IO, DoomUpdateRequest] =
+    jsonOf[IO, DoomUpdateRequest]
+
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token               => listDoomPools(Map())(token)
-      case GET -> Root / LongVar(id) as token => getDoomPool(id)(token)
-      case req @ POST -> Root as token        => createDoomPool(req)
+      case GET -> Root as token                               => listDoomPools(Map())(token)
+      case GET -> Root / LongVar(id) as token                 => getDoomPool(id)(token)
+      case req @ POST -> Root as token                        => createDoomPool(req)
+      case req @ POST -> Root / LongVar(id) / "doom" as token => updateDoom(id, req)
     })
 
   private def listDoomPools(
@@ -35,9 +33,7 @@ private case class DoomPoolRoute(
   )(token: Token): IO[Response[IO]] = for {
     doomPools <- doomPoolLogic.list(filters)
     allowedDoomPools <- IO.pure(
-      doomPools.filter(doomPool =>
-        token.user.doomPermission.isValid(doomPool.id.toString)
-      )
+      doomPools.filter(doomPool => token.user.doomPermission.isValid(doomPool.id.toString))
     )
     response <- Ok(allowedDoomPools)
   } yield response
@@ -55,7 +51,7 @@ private case class DoomPoolRoute(
   ): IO[Response[IO]] =
     for {
       _ <- IO.raiseWhen(!value.context.user.doomPermission.isValid("*"))(
-        MissingPermissionException("Cannot create token")
+        MissingPermissionException("Cannot create doom pool")
       )
       doomPoolRequest <- value.req.as[DoomPoolRequest]
       user <- doomPoolLogic.create(
@@ -63,6 +59,20 @@ private case class DoomPoolRoute(
         doomPoolRequest.doom.getOrElse(0)
       )
       response <- Ok(user)
+    } yield response
+
+  private def updateDoom(id: Long, req: AuthedRequest[IO, Token]): IO[Response[IO]] =
+    for {
+      _ <- IO.raiseWhen(!req.context.user.doomPermission.isValid(id.toString))(
+        MissingPermissionException("Cannot update doom")
+      )
+      doomUpdateRequest <- req.req.as[DoomUpdateRequest]
+      doomPool <- doomPoolLogic.getById(id)
+      _ <- doomPoolLogic.changeDoomAmount(id, doomUpdateRequest.amount)
+      response <- Ok(DoomUpdateResponse(
+        doomPool.doom,
+        doomPool.doom + doomUpdateRequest.amount
+      ))
     } yield response
 }
 
