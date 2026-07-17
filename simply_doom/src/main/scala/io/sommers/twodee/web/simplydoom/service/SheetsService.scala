@@ -3,10 +3,14 @@ package io.sommers.twodee.web.simplydoom.service
 import cats.effect.IO
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.auth.oauth2.{
+  GoogleAuthorizationCodeFlow,
+  GoogleClientSecrets
+}
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
+import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.sheets.v4.{Sheets, SheetsScopes}
 import io.sommers.twodee.web.simplydoom.exception.SheetException
 import io.sommers.twodee.web.simplydoom.{DoomConfig, GoogleConfig}
@@ -18,6 +22,8 @@ import scala.util.Using
 
 trait SheetsService {
   def getSectionByName(sheet: String, range: String): IO[SheetSection]
+
+  def updateSection(sheetSection: SheetSection, values: List[List[Any]]): IO[SheetSection]
 }
 
 object SheetsService {
@@ -29,45 +35,78 @@ case class GoogleSheetsService(
 ) extends SheetsService {
   override def getSectionByName(sheet: String, name: String): IO[SheetSection] =
     for {
-      range <- IO(
+      valueRange <- IO(
         sheets
           .spreadsheets()
           .values()
           .get(sheet, name)
           .execute()
-          .getValues
       )
     } yield SheetSection(
-      range.asScala
-        .map(_.toArray)
-        .toArray
+      sheet,
+      valueRange
     )
+
+  override def updateSection(
+      sheetSection: SheetSection,
+      values: List[List[Any]]
+  ): IO[SheetSection] = for {
+    updatedPlotPoints <- IO.pure(sheetSection.valueRange.setValues(values.map(_.asJava).asJava))
+    updatedValues <- IO(
+      sheets
+        .spreadsheets()
+        .values()
+        .update(sheetSection.sheet, sheetSection.range, updatedPlotPoints)
+        .setIncludeValuesInResponse(true)
+        .setValueInputOption("RAW")
+        .execute()
+    )
+  } yield sheetSection.copy(valueRange = updatedValues.getUpdatedData)
 }
 
 case class SheetSection(
-    arrays: Array[Array[Any]]
+    sheet: String,
+    valueRange: ValueRange
 ) {
-  def getInt(xPos: Int, yPos: Int): IO[Int] = for {
-    value <- getValue(xPos, yPos)
-    parsed <- value match {
+
+  lazy val range: String = valueRange.getRange
+
+  lazy val rows: List[SheetRow] = valueRange.getValues.asScala.map(row => SheetRow(row.asScala.toList)).toList
+
+  def getCell(row: Int, column: Int): IO[SheetCell] = {
+    if (row < rows.size) {
+      rows(row).getCell(column)
+    } else {
+      IO.raiseError(SheetException(s"row $row too big vs ${rows.size}"))
+    }
+  }
+}
+
+case class SheetRow(columns: List[Any]) {
+  def getCell(column: Int): IO[SheetCell] = if (column < columns.size) {
+    IO.pure(SheetCell(columns(column)))
+  } else {
+    IO.raiseError(SheetException(s"column $column too big vs ${columns.size}"))
+  }
+
+  def tuple2[T1, T2](_1: SheetCell => IO[T1], _2: SheetCell => IO[T2]): IO[Option[(T1, T2)]] = columns match {
+    case List(columnA, columnB) => IO.both(_1(SheetCell(columnA)), _2(SheetCell(columnB))).option
+    case list => IO.pure(None)
+  }
+
+  def length: Int = columns.size
+}
+
+case class SheetCell(cellValue: Any) {
+  def asInt: IO[Int] = for {
+    parsed <- cellValue match {
       case s: String => IO(s.toInt)
       case i: Number => IO.pure(i.intValue())
       case a: Any => IO.raiseError(SheetException(s"${a.toString} don't know how to covert to Int"))
     }
   } yield parsed
-
-  private def getValue(xPos: Int, yPos: Int): IO[Any] = {
-    if (xPos < arrays.length) {
-      val array = arrays(xPos)
-      if (yPos < array.length) {
-        IO.pure(array(yPos))
-      } else {
-        IO.raiseError(SheetException(s"yPos $yPos too big vs ${array.length}"))
-      }
-    } else {
-      IO.raiseError(SheetException(s"xPos $xPos too big vs ${arrays.length}"))
-    }
-  }
+  
+  def asString: IO[String] = IO.pure(cellValue.toString)
 }
 
 object GoogleSheetsService {
