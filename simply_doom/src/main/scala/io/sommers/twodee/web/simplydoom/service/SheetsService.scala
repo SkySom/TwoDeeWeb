@@ -52,7 +52,7 @@ case class GoogleSheetsService(
       values: List[List[Any]]
   ): IO[SheetSection] = for {
     updatedPlotPoints <- IO.pure(sheetSection.valueRange.setValues(values.map(_.asJava).asJava))
-    updatedValues <- IO(
+    updatedValues <- IO.blocking(
       sheets
         .spreadsheets()
         .values()

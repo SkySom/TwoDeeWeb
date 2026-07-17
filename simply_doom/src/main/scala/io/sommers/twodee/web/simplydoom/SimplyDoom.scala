@@ -42,7 +42,7 @@ object SimplyDoom extends IOApp {
       doomPoolLogic <- IO.pure(DoomPoolLogic(doomPoolService))
       sheetsService <- SheetsService(config)
       characterService <- CharacterService(transactor)
-      characterLogic <- IO.pure(CharacterLogic(characterService, sheetsService))
+      characterLogic <- CharacterLogic(characterService, sheetsService)
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(

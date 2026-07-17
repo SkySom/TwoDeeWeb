@@ -78,7 +78,7 @@ lazy val simplyDoom = (project in file("simply_doom"))
     libraryDependencies ++= logbackDependencies ++ http4sDependencies ++ databaseDependencies ++ configDependencies ++
       circeDependencies ++ googleDependencies ++ Seq(
         "com.google.oauth-client" % "google-oauth-client-jetty" % "1.39.0",
-        "com.evolution" %% "scache" % "5.1.2"
+        "io.chrisdavenport" %% "mules" % "0.7.0"
       )
   )
 

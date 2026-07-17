@@ -2,9 +2,12 @@ package io.sommers.twodee.web.simplydoom.logic
 
 import cats.effect.IO
 import cats.implicits.*
+import io.chrisdavenport.mules.{MemoryCache, TimeSpec}
 import io.sommers.twodee.web.simplydoom.exception.NotFoundException
 import io.sommers.twodee.web.simplydoom.model.{Character, CharacterRow, User}
 import io.sommers.twodee.web.simplydoom.service.{CharacterService, SheetSection, SheetsService}
+
+import scala.concurrent.duration.DurationInt
 
 trait CharacterLogic {
   def create(name: String, sheet: String, owner: User): IO[Character]
@@ -17,13 +20,19 @@ trait CharacterLogic {
 }
 
 object CharacterLogic {
-  def apply(characterService: CharacterService, sheetsService: SheetsService): CharacterLogic =
-    CharacterLogicImpl(characterService, sheetsService)
+  def apply(characterService: CharacterService, sheetsService: SheetsService): IO[CharacterLogic] =
+    for {
+      skillCache <- MemoryCache.ofConcurrentHashMap[IO, String, Map[String, String]](
+        TimeSpec.fromDuration(1.hour)
+      )
+    } yield CharacterLogicImpl(characterService, sheetsService, skillCache)
+
 }
 
 case class CharacterLogicImpl(
     characterService: CharacterService,
-    sheetsService: SheetsService
+    sheetsService: SheetsService,
+    skillCache: MemoryCache[IO, String, Map[String, String]]
 ) extends CharacterLogic {
 
   override def create(name: String, sheet: String, owner: User): IO[Character] =
@@ -40,7 +49,7 @@ case class CharacterLogicImpl(
           row => IO.pure(row)
         )
       )
-    sheetAdditions <- IO.both(this.getPlotPoints(row.sheet), this.getSkills(row.sheet))
+    sheetAdditions <- IO.both(this.getPlotPoints(row.sheet), this.getSkillsCached(row.sheet))
   } yield row.toCharacter(sheetAdditions._1, sheetAdditions._2)
 
   override def list(filters: Map[String, String]): IO[List[Character]] = IO.pure(List())
@@ -79,5 +88,10 @@ case class CharacterLogicImpl(
       .map(_.tuple2(_.asString, _.asString))
       .sequence
     skills <- IO.pure(skillRows.flatten.toMap)
+  } yield skills
+
+  private def getSkillsCached(sheetId: String): IO[Map[String, String]] = for {
+    existing <- skillCache.lookup(sheetId)
+    skills <- existing.fold(getSkills(sheetId))(IO.pure)
   } yield skills
 }
