@@ -22,16 +22,20 @@ trait CharacterLogic {
 object CharacterLogic {
   def apply(characterService: CharacterService, sheetsService: SheetsService): IO[CharacterLogic] =
     for {
+      rowCache <- MemoryCache.ofConcurrentHashMap[IO, Long, CharacterRow](
+        TimeSpec.fromDuration(1.hour)
+      )
       skillCache <- MemoryCache.ofConcurrentHashMap[IO, String, Map[String, String]](
         TimeSpec.fromDuration(1.hour)
       )
-    } yield CharacterLogicImpl(characterService, sheetsService, skillCache)
+    } yield CharacterLogicImpl(characterService, sheetsService, rowCache, skillCache)
 
 }
 
 case class CharacterLogicImpl(
     characterService: CharacterService,
     sheetsService: SheetsService,
+    rowCache: MemoryCache[IO, Long, CharacterRow],
     skillCache: MemoryCache[IO, String, Map[String, String]]
 ) extends CharacterLogic {
 
@@ -42,29 +46,33 @@ case class CharacterLogicImpl(
     } yield character
 
   override def getById(id: Long): IO[Character] = for {
-    row <- characterService
-      .getCharacter(id)
-      .flatMap(
-        _.fold[IO[CharacterRow]](IO.raiseError(NotFoundException(s"No character with id $id")))(
-          row => IO.pure(row)
-        )
-      )
+    row <- getCharacterRow(id)
     sheetAdditions <- IO.both(this.getPlotPoints(row.sheet), this.getSkillsCached(row.sheet))
   } yield row.toCharacter(sheetAdditions._1, sheetAdditions._2)
 
   override def list(filters: Map[String, String]): IO[List[Character]] = IO.pure(List())
 
   override def changePlotPoints(id: Long, change: Int): IO[Unit] = for {
-    sheet <- characterService
-      .getCharacter(id)
-      .flatMap(
-        _.fold[IO[String]](IO.raiseError(NotFoundException(s"No character with id $id")))(row =>
-          IO.pure(row.sheet)
-        )
-      )
-    plotPointsSheetSection <- getPlotPointsSheetSection(sheet)
+    row <- getCharacterRow(id)
+    plotPointsSheetSection <- getPlotPointsSheetSection(row.sheet)
     _ <- setPlotPoints(plotPointsSheetSection, change)
   } yield ()
+  
+  private def getCharacterRow(id: Long): IO[CharacterRow] = for {
+    cachedRow <- rowCache.lookup(id)
+    row <- cachedRow.fold(pullCharacterRowFromDB(id))(IO.pure)
+  } yield row
+  
+  private def pullCharacterRowFromDB(id: Long): IO[CharacterRow] = for {
+    characterRow <- characterService
+      .getCharacter(id)
+      .flatMap(
+        _.fold[IO[CharacterRow]](IO.raiseError(NotFoundException(s"No character with id $id")))(
+          row => IO.pure(row)
+        )
+      )
+    _ <- rowCache.insert(id, characterRow)
+  } yield characterRow
 
   private def setPlotPoints(sheetSection: SheetSection, change: Int): IO[Unit] = for {
     plotPointsCell <- sheetSection.getCell(0, 0)
