@@ -3,7 +3,7 @@ package io.sommers.twodee.web.simplydoom.route
 import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
-import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, DoomPoolLogic, TokenLogic, UserLogic}
+import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, TokenLogic, UserLogic}
 import io.sommers.twodee.web.simplydoom.model.*
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe.jsonOf
@@ -18,12 +18,15 @@ private case class CharacterRoute(
   implicit val characterCreateRequestDecoder: EntityDecoder[IO, CharacterCreateRequest] =
     jsonOf[IO, CharacterCreateRequest]
 
+  implicit val plotPointsUpdateRequest: EntityDecoder[IO, PlotPointsUpdateRequest] =
+    jsonOf[IO, PlotPointsUpdateRequest]
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
       case GET -> Root as token                               => listCharacters(Map())(token)
       case GET -> Root / LongVar(id) as token                 => getCharacter(id)(token)
       case req @ POST -> Root as token                        => createCharacter(req)
       //case req @ POST -> Root / LongVar(id) / "doom" as token => updateDoom(id, req)
+      case req @ POST -> Root / LongVar(id) / "plotpoints" as token => updatePlotPoints(id, req)
     })
 
   private def listCharacters(
@@ -63,23 +66,21 @@ private case class CharacterRoute(
       response <- Ok(character)
     } yield response
 
-  /*
-  private def updateDoom(id: Long, req: AuthedRequest[IO, Token]): IO[Response[IO]] =
+  private def updatePlotPoints(id: Long, req: AuthedRequest[IO, Token]): IO[Response[IO]] =
     for {
-      _ <- IO.raiseWhen(!req.context.user.doomPermission.isValid(id.toString))(
-        MissingPermissionException("Cannot update doom")
+      _ <- IO.raiseWhen(!req.context.user.characterPermissions.isValid(id.toString))(
+        MissingPermissionException("Cannot update plot points")
       )
-      doomUpdateRequest <- req.req.as[DoomUpdateRequest]
-      doomPool <- doomPoolLogic.getById(id)
-      _ <- doomPoolLogic.changeDoomAmount(id, doomUpdateRequest.amount)
+      plotPointsUpdateRequest <- req.req.as[PlotPointsUpdateRequest]
+      character <- characterLogic.getById(id)
+      _ <- characterLogic.changePlotPoints(id, plotPointsUpdateRequest.amount)
       response <- Ok(
-        DoomUpdateResponse(
-          doomPool.doom,
-          doomPool.doom + doomUpdateRequest.amount
+        PlotPointsUpdateResponse(
+          character.plotPoints,
+          character.plotPoints + plotPointsUpdateRequest.amount
         )
       )
     } yield response
-   */
 }
 
 object CharacterRoute {
