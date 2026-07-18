@@ -47,7 +47,7 @@ private case class CharacterRoute(
   private def getCharacter(id: Long, includeSkills: Boolean)(token: Token): IO[Response[IO]] = for {
     _ <- IO.raiseWhen(
       !token.user.characterPermissions.isValid(id.toString)
-    )(MissingPermissionException(s"Cannot read id $id"))
+    )(MissingPermissionException(s"Cannot get character $id"))
     character <- characterLogic.getById(id, includeSkills)
     response <- Ok(character)
   } yield response
@@ -74,7 +74,7 @@ private case class CharacterRoute(
   private def updatePlotPoints(id: Long, req: AuthedRequest[IO, Token]): IO[Response[IO]] =
     for {
       _ <- IO.raiseWhen(!req.context.user.characterPermissions.isValid(id.toString))(
-        MissingPermissionException("Cannot update plot points")
+        MissingPermissionException(s"Cannot update plot points for character $id")
       )
       plotPointsUpdateRequest <- req.req.as[PlotPointsUpdateRequest]
       character <- characterLogic.getById(id)

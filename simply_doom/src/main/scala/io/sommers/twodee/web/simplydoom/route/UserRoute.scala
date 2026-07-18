@@ -11,19 +11,20 @@ import org.http4s.dsl.io.*
 import org.http4s.{AuthedRequest, AuthedRoutes, EntityDecoder, HttpRoutes, Response}
 
 private case class UserRoute(
-  tokenLogic: TokenLogic,
-  userLogic: UserLogic
+    tokenLogic: TokenLogic,
+    userLogic: UserLogic
 ) {
   implicit val userRequestDecoder: EntityDecoder[IO, UserRequest] =
     jsonOf[IO, UserRequest]
 
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token                  => getUser(token.user.id)(token)
-      case GET -> Root / LongVar(id) as token    => getUser(id)(token)
-      case DELETE -> Root as token               => deleteUser(token.id)(token)
-      case DELETE -> Root / LongVar(id) as token => deleteUser(id)(token)
-      case req @ POST -> Root as token           => createUser(req)
+      case GET -> Root as token                            => getUser(token.user.id)(token)
+      case GET -> Root / LongVar(id) as token              => getUser(id)(token)
+      case DELETE -> Root as token                         => deleteUser(token.id)(token)
+      case DELETE -> Root / LongVar(id) as token           => deleteUser(id)(token)
+      case req @ POST -> Root as token                     => createUser(req)
+      case DELETE -> Root / LongVar(id) / "cache" as token => deleteUserFromCache(id)(token)
     })
 
   private def getUser(id: Long)(token: Token): IO[Response[IO]] = for {
@@ -44,8 +45,8 @@ private case class UserRoute(
 
   private def createUser(value: AuthedRequest[IO, Token]): IO[Response[IO]] =
     for {
-      _ <- IO.raiseWhen(value.context.user.userPermission.isValid("*"))(
-        MissingPermissionException("Cannot create token")
+      _ <- IO.raiseWhen(!value.context.user.userPermission.isValid("*"))(
+        MissingPermissionException("Cannot create user")
       )
       userRequest <- value.req.as[UserRequest]
       user <- userLogic.createUser(
@@ -59,6 +60,14 @@ private case class UserRoute(
       )
       response <- Ok(user)
     } yield response
+    
+  private def deleteUserFromCache(id: Long)(token: Token): IO[Response[IO]] = for {
+    _ <- IO.raiseWhen(id != token.user.id && !token.user.userPermission.isValid(id.toString))(
+      MissingPermissionException("Cannot remove user from cache")
+    )
+    _ <- userLogic.getUser(id)
+    response <- NoContent()
+  } yield response
 }
 
 object UserRoute {

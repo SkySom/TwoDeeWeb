@@ -13,12 +13,13 @@ trait LogicProvider {
 
 object LogicProvider {
   def apply(serviceProvider: ServiceProvider, doomConfig: DoomConfig): IO[LogicProvider] = for {
+    userLogic <- UserLogic(serviceProvider.userService)
     characterLogic <- CharacterLogic(
       serviceProvider.characterService,
-      serviceProvider.sheetsService
+      serviceProvider.sheetsService,
+      userLogic
     )
     doomPoolLogic <- DoomPoolLogic(serviceProvider.doomPoolService)
-    userLogic <- UserLogic(serviceProvider.userService)
     tokenLogic <- TokenLogic(doomConfig.auth, userLogic, serviceProvider.tokenService)
   } yield LogicProviderImpl(
     characterLogic,

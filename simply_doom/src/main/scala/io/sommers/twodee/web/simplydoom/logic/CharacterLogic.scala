@@ -20,7 +20,7 @@ trait CharacterLogic {
 }
 
 object CharacterLogic {
-  def apply(characterService: CharacterService, sheetsService: SheetsService): IO[CharacterLogic] =
+  def apply(characterService: CharacterService, sheetsService: SheetsService, userLogic: UserLogic): IO[CharacterLogic] =
     for {
       rowCache <- MemoryCache.ofConcurrentHashMap[IO, Long, CharacterRow](
         TimeSpec.fromDuration(8.hour)
@@ -28,13 +28,14 @@ object CharacterLogic {
       skillCache <- MemoryCache.ofConcurrentHashMap[IO, String, Map[String, String]](
         TimeSpec.fromDuration(8.hour)
       )
-    } yield CharacterLogicImpl(characterService, sheetsService, rowCache, skillCache)
+    } yield CharacterLogicImpl(characterService, sheetsService, userLogic, rowCache, skillCache)
 
 }
 
 case class CharacterLogicImpl(
     characterService: CharacterService,
     sheetsService: SheetsService,
+    userLogic: UserLogic,
     rowCache: MemoryCache[IO, Long, CharacterRow],
     skillCache: MemoryCache[IO, String, Map[String, String]]
 ) extends CharacterLogic {
@@ -43,6 +44,7 @@ case class CharacterLogicImpl(
     for {
       id <- characterService.createCharacter(name, sheet, owner.id)
       character <- this.getById(id)
+      _ <- userLogic.addCharacterPermission(owner.id, character.id)
     } yield character
 
   override def getById(id: Long, includeSkills: Boolean = false): IO[Character] = for {

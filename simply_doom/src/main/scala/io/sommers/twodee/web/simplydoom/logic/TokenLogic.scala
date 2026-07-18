@@ -31,6 +31,8 @@ trait TokenLogic {
   def deleteToken(id: Long): IO[Unit]
 
   def getToken(id: Long): IO[Token]
+
+  def deleteTokenFromCache(id: Long): IO[Unit]
 }
 
 object TokenLogic {
@@ -91,10 +93,12 @@ case class TokenLogicImpl(
     token._5
   )
 
-  override def deleteToken(id: Long): IO[Unit] =
-    tokenService
+  override def deleteToken(id: Long): IO[Unit] = for {
+    _ <- deleteTokenFromCache(id)
+    _ <- tokenService
       .delete(id)
       .map(updated => IO.raiseWhen(updated == 0)(NotFoundException(s"No Token with $id")))
+  } yield ()
 
   override def getToken(id: Long): IO[Token] = for {
     cachedToken <- tokenCache.lookup(id)
@@ -141,4 +145,8 @@ case class TokenLogicImpl(
     } yield Some(token)
   }
 
+  override def deleteTokenFromCache(id: Long): IO[Unit] = for {
+    token <- getToken(id)
+    _ <- tokenCache.delete(token.id)
+  } yield ()
 }

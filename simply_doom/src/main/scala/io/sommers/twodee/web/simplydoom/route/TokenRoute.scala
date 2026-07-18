@@ -4,26 +4,27 @@ import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{TokenLogic, UserLogic}
-import io.sommers.twodee.web.simplydoom.model.{Token, TokenRequest, User, UserRequest}
+import io.sommers.twodee.web.simplydoom.model.{Token, TokenRequest, User}
 import org.http4s.circe.CirceEntityEncoder.*
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
 import org.http4s.{AuthedRequest, AuthedRoutes, EntityDecoder, HttpRoutes, Response}
 
 private case class TokenRoute(
-  tokenLogic: TokenLogic,
-  userLogic: UserLogic
+    tokenLogic: TokenLogic,
+    userLogic: UserLogic
 ) {
   implicit val tokenRequestDecoder: EntityDecoder[IO, TokenRequest] =
     jsonOf[IO, TokenRequest]
 
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token                  => getToken(token.id)(token)
-      case GET -> Root / LongVar(id) as token    => getToken(id)(token)
-      case DELETE -> Root as token               => deleteToken(token.id)(token)
-      case DELETE -> Root / LongVar(id) as token => deleteToken(id)(token)
-      case req @ POST -> Root as token           => createToken(req)
+      case GET -> Root as token                            => getToken(token.id)(token)
+      case GET -> Root / LongVar(id) as token              => getToken(id)(token)
+      case DELETE -> Root as token                         => deleteToken(token.id)(token)
+      case DELETE -> Root / LongVar(id) as token           => deleteToken(id)(token)
+      case req @ POST -> Root as token                     => createToken(req)
+      case DELETE -> Root / LongVar(id) / "cache" as token => deleteTokenFromCache(id)(token)
     })
 
   private def getToken(id: Long)(authToken: Token): IO[Response[IO]] = for {
@@ -44,7 +45,7 @@ private case class TokenRoute(
 
   private def createToken(value: AuthedRequest[IO, Token]): IO[Response[IO]] =
     for {
-      _ <- IO.raiseWhen(value.context.user.tokenPermission.isValid("*"))(
+      _ <- IO.raiseWhen(!value.context.user.tokenPermission.isValid("*"))(
         MissingPermissionException("Cannot create token")
       )
       tokenRequest <- value.req.as[TokenRequest]
@@ -54,6 +55,14 @@ private case class TokenRoute(
       )
       response <- Ok(token)
     } yield response
+
+  private def deleteTokenFromCache(id: Long)(token: Token): IO[Response[IO]] = for {
+    _ <- IO.raiseWhen(id != token.id && !token.user.tokenPermission.isValid(id.toString))(
+      MissingPermissionException("Cannot delete token from cache")
+    )
+    _ <- tokenLogic.deleteTokenFromCache(id)
+    response <- NoContent()
+  } yield response
 }
 
 object TokenRoute {

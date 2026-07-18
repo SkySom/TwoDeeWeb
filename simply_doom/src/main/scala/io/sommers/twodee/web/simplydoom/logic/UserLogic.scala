@@ -24,6 +24,10 @@ trait UserLogic {
   def deleteUser(id: Long): IO[Unit]
 
   def searchUsers(filters: Map[String, String]): IO[List[User]]
+  
+  def deleteUserFromCache(id: Long): IO[Unit]
+  
+  def addCharacterPermission(userId: Long, characterId: Long): IO[Unit]
 }
 
 object UserLogic {
@@ -86,4 +90,21 @@ case class UserLogicImpl(
       )
     _ <- userCache.insert(id, user)
   } yield user
+
+  override def deleteUserFromCache(id: Long): IO[Unit] = for {
+    user <- getUser(id)
+    _ <- userCache.delete(user.id)
+  } yield ()
+
+  override def addCharacterPermission(userId: Long, characterId: Long): IO[Unit] = for {
+    user <- this.getUser(userId)
+    _ <- userService.updateUserPermissions(
+      user.id,
+      user.characterPermissions.withValue(characterId.toString),
+      user.doomPermission,
+      user.userPermission,
+      user.tokenPermission
+    )
+    _ <- deleteUserFromCache(userId)
+  } yield ()
 }

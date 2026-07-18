@@ -1,11 +1,7 @@
 package io.sommers.twodee.web.simplydoom.service
 
 import cats.effect.IO
-import doobie.implicits.{
-  toConnectionIOOps,
-  toDoobieStreamOps,
-  toSqlInterpolator
-}
+import doobie.implicits.{toConnectionIOOps, toDoobieStreamOps, toSqlInterpolator}
 import doobie.util.fragment.Fragment
 import doobie.{ConnectionIO, Transactor}
 import io.sommers.twodee.web.simplydoom.model.Permission
@@ -28,13 +24,13 @@ trait UserService {
   ]]
 
   def createUser(
-    name: String,
-    characterPermission: Permission,
-    doomPermission: Permission,
-    userPermission: Permission,
-    tokenPermission: Permission,
-    notes: String,
-    createdBy: Option[Long]
+      name: String,
+      characterPermission: Permission,
+      doomPermission: Permission,
+      userPermission: Permission,
+      tokenPermission: Permission,
+      notes: String,
+      createdBy: Option[Long]
   ): IO[Long]
 
   def deleteUser(id: Long): IO[Int]
@@ -52,6 +48,14 @@ trait UserService {
         Option[Long]
     )
   ]]
+
+  def updateUserPermissions(
+      id: Long,
+      characterPermission: Permission,
+      doomPermission: Permission,
+      userPermission: Permission,
+      tokenPermission: Permission
+  ): IO[Int]
 }
 
 object UserService {
@@ -62,7 +66,7 @@ object UserService {
   } yield UserServiceImpl(transactor)
 }
 
-case class UserServiceImpl(
+private case class UserServiceImpl(
     transactor: Transactor[IO]
 ) extends UserService {
 
@@ -97,13 +101,13 @@ case class UserServiceImpl(
       .transact(transactor)
 
   override def createUser(
-    name: String,
-    characterPermission: Permission,
-    doomPermission: Permission,
-    userPermission: Permission,
-    tokenPermission: Permission,
-    notes: String,
-    createdBy: Option[Long]
+      name: String,
+      characterPermission: Permission,
+      doomPermission: Permission,
+      userPermission: Permission,
+      tokenPermission: Permission,
+      notes: String,
+      createdBy: Option[Long]
   ): IO[Long] =
     sql""" INSERT INTO user(name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, created_by)
          | VALUES ($name, $characterPermission, $doomPermission, $userPermission, $tokenPermission, $notes, $createdBy)
@@ -167,8 +171,24 @@ case class UserServiceImpl(
       .transact(transactor)
       .compile
       .toList
-
   }
+
+  override def updateUserPermissions(
+      id: Long,
+      characterPermission: Permission,
+      doomPermission: Permission,
+      userPermission: Permission,
+      tokenPermission: Permission
+  ): IO[Int] =
+    sql"""UPDATE user SET 
+         | character_permissions = $characterPermission, 
+         | doom_permissions = $doomPermission,
+         | user_permissions = $userPermission,
+         | token_permissions = $tokenPermission,
+         | update_at = CURRENT_TIMESTAMP 
+         | WHERE id = $id
+         """.update.run
+      .transact(transactor)
 }
 
 object UserServiceImpl {
