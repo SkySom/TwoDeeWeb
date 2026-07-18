@@ -23,10 +23,10 @@ object CharacterLogic {
   def apply(characterService: CharacterService, sheetsService: SheetsService): IO[CharacterLogic] =
     for {
       rowCache <- MemoryCache.ofConcurrentHashMap[IO, Long, CharacterRow](
-        TimeSpec.fromDuration(1.hour)
+        TimeSpec.fromDuration(8.hour)
       )
       skillCache <- MemoryCache.ofConcurrentHashMap[IO, String, Map[String, String]](
-        TimeSpec.fromDuration(1.hour)
+        TimeSpec.fromDuration(8.hour)
       )
     } yield CharacterLogicImpl(characterService, sheetsService, rowCache, skillCache)
 

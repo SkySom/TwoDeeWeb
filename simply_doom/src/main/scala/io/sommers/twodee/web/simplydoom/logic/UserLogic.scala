@@ -29,7 +29,7 @@ trait UserLogic {
 object UserLogic {
   def apply(userService: UserService): IO[UserLogic] = for {
     userCache <- MemoryCache.ofConcurrentHashMap[IO, Long, User](
-      TimeSpec.fromDuration(1.hour)
+      TimeSpec.fromDuration(8.hour)
     )
   } yield UserLogicImpl(
     userService,
