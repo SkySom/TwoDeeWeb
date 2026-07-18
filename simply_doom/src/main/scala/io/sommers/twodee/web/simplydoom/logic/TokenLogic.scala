@@ -32,8 +32,8 @@ trait TokenLogic {
 }
 
 object TokenLogic {
-  def apply(authConfig: AuthConfig, userLogic: UserLogic, tokenService: TokenService): TokenLogic =
-    TokenLogicImpl(authConfig, userLogic, tokenService)
+  def apply(authConfig: AuthConfig, userLogic: UserLogic, tokenService: TokenService): IO[TokenLogic] =
+    IO.pure(TokenLogicImpl(authConfig, userLogic, tokenService))
 }
 
 case class TokenLogicImpl(

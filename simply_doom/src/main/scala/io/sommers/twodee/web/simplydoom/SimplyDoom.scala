@@ -4,16 +4,13 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import doobie.Transactor
 import doobie.hikari.HikariTransactor
 import doobie.log4cats.Log4CatsDebuggingLogHandler
-import fs2.Stream
-import io.sommers.twodee.web.simplydoom.exception.{InvalidFieldException, InvalidTokenException, MissingPermissionException, NotFoundException, SheetException}
-import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, DoomPoolLogic, TokenLogic, UserLogic}
+import io.sommers.twodee.web.simplydoom.exception.*
+import io.sommers.twodee.web.simplydoom.logic.{LogicProvider, TokenLogic, UserLogic}
 import io.sommers.twodee.web.simplydoom.model.AllowAllPermission
-import io.sommers.twodee.web.simplydoom.route.{CharacterRoute, DoomPoolRoute, TokenRoute, UserRoute}
+import io.sommers.twodee.web.simplydoom.route.RouteProvider
 import io.sommers.twodee.web.simplydoom.service.*
-import org.http4s.dsl.io.*
+import org.http4s.Response
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.Router
-import org.http4s.{Response, Status}
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 
@@ -33,60 +30,17 @@ object SimplyDoom extends IOApp {
   ): IO[ExitCode] = {
     for {
       logger <- loggerFactory.fromClass(classOf[SimplyDoom])
-      userService <- UserService(transactor)
-      userLogic <- IO.pure(UserLogic(userService))
-      tokenService <- TokenService(transactor)
-      tokenLogic <- IO.pure(TokenLogic(config.auth, userLogic, tokenService))
-      _ <- checkMaster(tokenLogic, userLogic)(logger)
-      doomPoolService <- DoomPoolService(transactor)
-      doomPoolLogic <- IO.pure(DoomPoolLogic(doomPoolService))
-      sheetsService <- SheetsService(config)
-      characterService <- CharacterService(transactor)
-      characterLogic <- CharacterLogic(characterService, sheetsService)
+      serviceProvider <- ServiceProvider(transactor, config)
+      logicProvider <- LogicProvider(serviceProvider, config)
+      _ <- checkMaster(logicProvider.tokenLogic, logicProvider.userLogic)(logger)
+      routerProvider <- RouteProvider(logicProvider)
+      exceptionHandler <- ExceptionHandler(loggerFactory)
       exitCode <- EmberServerBuilder
         .default[IO]
         .withHttpApp(
-          Router(
-            "/user" -> UserRoute(tokenLogic, userLogic),
-            "/token" -> TokenRoute(tokenLogic, userLogic),
-            "/doompool" -> DoomPoolRoute(tokenLogic, doomPoolLogic),
-            "/character" -> CharacterRoute(tokenLogic, characterLogic, userLogic)
-          ).orNotFound
+          routerProvider.asRouter.orNotFound
         )
-        .withErrorHandler {
-          case MissingPermissionException(message) =>
-            IO.pure(
-              Response(
-                status = Status.Forbidden,
-                body = Stream.emits(message.getBytes().toSeq)
-              )
-            )
-          case _: NotFoundException => NotFound()
-          case InvalidTokenException(message) =>
-            IO.pure(
-              Response(
-                status = Status.Forbidden,
-                body = Stream.emits(message.getBytes().toSeq)
-              )
-            )
-          case SheetException(message) =>
-            IO.pure(
-              Response(
-                status = Status.InternalServerError,
-                body = Stream.emits(message.getBytes().toSeq)
-              )
-            )
-          case InvalidFieldException(message) => IO.pure(
-            Response(
-              status = Status.BadRequest,
-              body = Stream.emits(message.getBytes().toSeq)
-            )
-          )
-          case e: Exception => for {
-            _ <- logger.error(e)("Ran into Issue")
-            response <- InternalServerError()
-          } yield response
-        }
+        .withErrorHandler(exceptionHandler)
         .build
         .use(_ => IO.never)
         .as(ExitCode.Success)

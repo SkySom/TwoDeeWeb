@@ -16,7 +16,7 @@ trait DoomPoolLogic {
 }
 
 object DoomPoolLogic {
-  def apply(doomPoolService: DoomPoolService): DoomPoolLogic = DoomPoolLogicImpl(doomPoolService)
+  def apply(doomPoolService: DoomPoolService): IO[DoomPoolLogic] = IO.pure(DoomPoolLogicImpl(doomPoolService))
 }
 
 case class DoomPoolLogicImpl(

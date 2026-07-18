@@ -24,9 +24,9 @@ trait UserLogic {
 }
 
 object UserLogic {
-  def apply(userService: UserService): UserLogic = UserLogicImpl(
+  def apply(userService: UserService): IO[UserLogic] = IO.pure(UserLogicImpl(
     userService
-  )
+  ))
 }
 
 case class UserLogicImpl(
