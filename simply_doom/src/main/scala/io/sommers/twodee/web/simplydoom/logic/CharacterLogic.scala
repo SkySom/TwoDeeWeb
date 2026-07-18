@@ -12,9 +12,9 @@ import scala.concurrent.duration.DurationInt
 trait CharacterLogic {
   def create(name: String, sheet: String, owner: User): IO[Character]
 
-  def getById(id: Long): IO[Character]
+  def getById(id: Long, includeSkills: Boolean = false): IO[Character]
 
-  def list(filters: Map[String, String]): IO[List[Character]]
+  def list(filters: Map[String, String], includeSkills: Boolean = false): IO[List[Character]]
 
   def changePlotPoints(id: Long, change: Int): IO[Unit]
 }
@@ -45,24 +45,30 @@ case class CharacterLogicImpl(
       character <- this.getById(id)
     } yield character
 
-  override def getById(id: Long): IO[Character] = for {
+  override def getById(id: Long, includeSkills: Boolean = false): IO[Character] = for {
     row <- getCharacterRow(id)
-    sheetAdditions <- IO.both(this.getPlotPoints(row.sheet), this.getSkillsCached(row.sheet))
+    sheetAdditions <- IO.both(
+      this.getPlotPoints(row.sheet),
+      if (includeSkills) this.getSkillsCached(row.sheet) else IO.pure(Map())
+    )
   } yield row.toCharacter(sheetAdditions._1, sheetAdditions._2)
 
-  override def list(filters: Map[String, String]): IO[List[Character]] = IO.pure(List())
+  override def list(
+      filters: Map[String, String],
+      includeSkills: Boolean = false
+  ): IO[List[Character]] = IO.pure(List())
 
   override def changePlotPoints(id: Long, change: Int): IO[Unit] = for {
     row <- getCharacterRow(id)
     plotPointsSheetSection <- getPlotPointsSheetSection(row.sheet)
     _ <- setPlotPoints(plotPointsSheetSection, change)
   } yield ()
-  
+
   private def getCharacterRow(id: Long): IO[CharacterRow] = for {
     cachedRow <- rowCache.lookup(id)
     row <- cachedRow.fold(pullCharacterRowFromDB(id))(IO.pure)
   } yield row
-  
+
   private def pullCharacterRowFromDB(id: Long): IO[CharacterRow] = for {
     characterRow <- characterService
       .getCharacter(id)

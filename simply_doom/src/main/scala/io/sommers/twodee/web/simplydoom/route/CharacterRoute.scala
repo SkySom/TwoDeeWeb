@@ -20,30 +20,35 @@ private case class CharacterRoute(
 
   implicit val plotPointsUpdateRequest: EntityDecoder[IO, PlotPointsUpdateRequest] =
     jsonOf[IO, PlotPointsUpdateRequest]
+
+  private object IncludeSkills extends FlagQueryParamMatcher("include-skills")
+
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token                               => listCharacters(Map())(token)
-      case GET -> Root / LongVar(id) as token                 => getCharacter(id)(token)
-      case req @ POST -> Root as token                        => createCharacter(req)
-      //case req @ POST -> Root / LongVar(id) / "doom" as token => updateDoom(id, req)
+      case GET -> Root :? IncludeSkills(includeSkills) as token =>
+        listCharacters(Map(), includeSkills)(token)
+      case GET -> Root / LongVar(id) :? IncludeSkills(includeSkills) as token =>
+        getCharacter(id, includeSkills)(token)
+      case req @ POST -> Root as token                              => createCharacter(req)
       case req @ POST -> Root / LongVar(id) / "plotpoints" as token => updatePlotPoints(id, req)
     })
 
   private def listCharacters(
-      filters: Map[String, String]
+      filters: Map[String, String],
+      includeSkills: Boolean
   )(token: Token): IO[Response[IO]] = for {
-    characters <- characterLogic.list(filters)
+    characters <- characterLogic.list(filters, includeSkills)
     allowedCharacters <- IO.pure(
       characters.filter(character => token.user.characterPermissions.isValid(character.id.toString))
     )
     response <- Ok(allowedCharacters)
   } yield response
 
-  private def getCharacter(id: Long)(token: Token): IO[Response[IO]] = for {
+  private def getCharacter(id: Long, includeSkills: Boolean)(token: Token): IO[Response[IO]] = for {
     _ <- IO.raiseWhen(
       !token.user.characterPermissions.isValid(id.toString)
     )(MissingPermissionException(s"Cannot read id $id"))
-    character <- characterLogic.getById(id)
+    character <- characterLogic.getById(id, includeSkills)
     response <- Ok(character)
   } yield response
 

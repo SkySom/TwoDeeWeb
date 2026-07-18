@@ -29,3 +29,12 @@ case class CharacterCreateRequest(
     sheet: String,
     ownerId: Option[Long]
 )
+
+case class PlotPointsUpdateRequest(
+  amount: Int
+)
+
+case class PlotPointsUpdateResponse(
+  old: Int,
+  current: Int
+)
