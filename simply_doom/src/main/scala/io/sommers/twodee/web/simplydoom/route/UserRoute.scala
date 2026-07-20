@@ -4,7 +4,7 @@ import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{TokenLogic, UserLogic}
-import io.sommers.twodee.web.simplydoom.model.{Token, User, UserRequest}
+import io.sommers.twodee.web.simplydoom.model.{NonePermission, Token, User, UserRequest}
 import org.http4s.circe.CirceEntityEncoder.*
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
@@ -51,10 +51,11 @@ private case class UserRoute(
       userRequest <- value.req.as[UserRequest]
       user <- userLogic.createUser(
         userRequest.name,
-        userRequest.characterPermissions,
-        userRequest.doomPermission,
-        userRequest.userPermission,
-        userRequest.tokenPermission,
+        userRequest.characterPermissions.getOrElse(NonePermission),
+        userRequest.doomPermission.getOrElse(NonePermission),
+        userRequest.userPermission.getOrElse(NonePermission),
+        userRequest.tokenPermission.getOrElse(NonePermission),
+        userRequest.externalId,
         userRequest.notes,
         Some(value.context.id)
       )

@@ -17,6 +17,7 @@ trait UserService {
         Permission,
         Permission,
         Permission,
+        Option[String],
         String,
         Boolean,
         Option[Long]
@@ -29,6 +30,7 @@ trait UserService {
       doomPermission: Permission,
       userPermission: Permission,
       tokenPermission: Permission,
+      externalId: Option[String],
       notes: String,
       createdBy: Option[Long]
   ): IO[Long]
@@ -43,6 +45,7 @@ trait UserService {
         Permission,
         Permission,
         Permission,
+        Option[String],
         String,
         Boolean,
         Option[Long]
@@ -78,12 +81,13 @@ private case class UserServiceImpl(
         Permission,
         Permission,
         Permission,
+        Option[String],
         String,
         Boolean,
         Option[Long]
     )
   ]] =
-    sql"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user where id = $id"
+    sql"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, external_id, notes, active, created_by from user where id = $id"
       .query[
         (
             Long,
@@ -92,6 +96,7 @@ private case class UserServiceImpl(
             Permission,
             Permission,
             Permission,
+            Option[String],
             String,
             Boolean,
             Option[Long]
@@ -106,11 +111,12 @@ private case class UserServiceImpl(
       doomPermission: Permission,
       userPermission: Permission,
       tokenPermission: Permission,
+      externalId: Option[String],
       notes: String,
       createdBy: Option[Long]
   ): IO[Long] =
-    sql""" INSERT INTO user(name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, created_by)
-         | VALUES ($name, $characterPermission, $doomPermission, $userPermission, $tokenPermission, $notes, $createdBy)
+    sql""" INSERT INTO user(name, character_permissions, doom_permissions, user_permissions, token_permissions, external_id, notes, created_by)
+         | VALUES ($name, $characterPermission, $doomPermission, $userPermission, $tokenPermission, $externalId, $notes, $createdBy)
           """.stripMargin.update
       .withUniqueGeneratedKeys[Long]("id")
       .transact(transactor)
@@ -127,13 +133,14 @@ private case class UserServiceImpl(
         Permission,
         Permission,
         Permission,
+        Option[String],
         String,
         Boolean,
         Option[Long]
     )
   ]] = {
     var query =
-      fr"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, notes, active, created_by from user"
+      fr"select id, name, character_permissions, doom_permissions, user_permissions, token_permissions, external_id, notes, active, created_by from user"
 
     val queryFilters = new ArrayBuffer[Fragment]()
 
@@ -146,6 +153,10 @@ private case class UserServiceImpl(
       .get("active")
       .map(_.toBoolean)
       .map(active => fr"active = $active")
+      .foreach(queryFilters.addOne)
+    filters
+      .get("external_id")
+      .map(externalId => fr"external_id = $externalId")
       .foreach(queryFilters.addOne)
 
     if (queryFilters.nonEmpty) {
@@ -162,6 +173,7 @@ private case class UserServiceImpl(
             Permission,
             Permission,
             Permission,
+            Option[String],
             String,
             Boolean,
             Option[Long]
@@ -203,6 +215,7 @@ object UserServiceImpl {
          |  doom_permissions VARCHAR NOT NULL DEFAULT '',
          |  user_permissions VARCHAR NOT NULL DEFAULT '',
          |  token_permissions VARCHAR NOT NULL DEFAULT '',
+         |  external_id VARCHAR,
          |  notes VARCHAR NOT NULL,
          |  active INTEGER NOT NULL DEFAULT 1,
          |  created_by INTEGER,

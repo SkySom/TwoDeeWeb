@@ -72,6 +72,7 @@ object SimplyDoom extends IOApp {
             AllowAllPermission,
             AllowAllPermission,
             AllowAllPermission,
+            None,
             "Default Master Token",
             None
           )

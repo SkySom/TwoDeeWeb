@@ -15,6 +15,7 @@ trait UserLogic {
       doomPermission: Permission,
       userPermission: Permission,
       tokenPermission: Permission,
+      externalId: Option[String],
       notes: String,
       createdBy: Option[Long]
   ): IO[User]
@@ -52,6 +53,7 @@ case class UserLogicImpl(
       doomPermission: Permission,
       userPermission: Permission,
       tokenPermission: Permission,
+      externalId: Option[String],
       notes: String,
       createdBy: Option[Long]
   ): IO[User] = userService
@@ -61,6 +63,7 @@ case class UserLogicImpl(
       doomPermission,
       userPermission,
       tokenPermission,
+      externalId,
       notes,
       createdBy
     )

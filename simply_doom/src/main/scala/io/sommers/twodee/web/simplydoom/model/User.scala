@@ -7,18 +7,20 @@ case class User(
     doomPermission: Permission,
     userPermission: Permission,
     tokenPermission: Permission,
+    externalId: Option[String],
     notes: String,
     active: Boolean,
     createdBy: Option[Long]
 )
 
 case class UserRequest(
-  name: String,
-  characterPermissions: Permission,
-  doomPermission: Permission,
-  userPermission: Permission,
-  tokenPermission: Permission,
-  notes: String
+    name: String,
+    characterPermissions: Option[Permission],
+    doomPermission: Option[Permission],
+    userPermission: Option[Permission],
+    tokenPermission: Option[Permission],
+    externalId: Option[String],
+    notes: String
 )
 
 object User {
@@ -30,6 +32,7 @@ object User {
           Permission,
           Permission,
           Permission,
+          Option[String],
           String,
           Boolean,
           Option[Long]
@@ -44,6 +47,7 @@ object User {
       tuple._6,
       tuple._7,
       tuple._8,
-      tuple._9
+      tuple._9,
+      tuple._10
     )
 }
