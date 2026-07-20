@@ -4,7 +4,12 @@ import cats.effect.IO
 import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{DoomPoolLogic, TokenLogic}
-import io.sommers.twodee.web.simplydoom.model.{DoomPoolRequest, DoomUpdateRequest, DoomUpdateResponse, Token}
+import io.sommers.twodee.web.simplydoom.model.{
+  DoomPoolRequest,
+  DoomUpdateRequest,
+  DoomUpdateResponse,
+  Token
+}
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
@@ -22,9 +27,9 @@ private case class DoomPoolRoute(
 
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token                               => listDoomPools(Map())(token)
-      case GET -> Root / LongVar(id) as token                 => getDoomPool(id)(token)
-      case req @ POST -> Root as token                        => createDoomPool(req)
+      case req @ GET -> Root as token         => listDoomPools(req.req.params)(token)
+      case GET -> Root / LongVar(id) as token => getDoomPool(id)(token)
+      case req @ POST -> Root as token        => createDoomPool(req)
       case req @ POST -> Root / LongVar(id) / "doom" as token => updateDoom(id, req)
     })
 
@@ -69,10 +74,12 @@ private case class DoomPoolRoute(
       doomUpdateRequest <- req.req.as[DoomUpdateRequest]
       doomPool <- doomPoolLogic.getById(id)
       _ <- doomPoolLogic.changeDoomAmount(id, doomUpdateRequest.amount)
-      response <- Ok(DoomUpdateResponse(
-        doomPool.doom,
-        doomPool.doom + doomUpdateRequest.amount
-      ))
+      response <- Ok(
+        DoomUpdateResponse(
+          doomPool.doom,
+          doomPool.doom + doomUpdateRequest.amount
+        )
+      )
     } yield response
 }
 

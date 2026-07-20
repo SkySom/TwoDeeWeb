@@ -19,13 +19,23 @@ private case class UserRoute(
 
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root as token                            => getUser(token.user.id)(token)
+      case req @ GET -> Root as token                      => listUsers(req.req.params)(token)
       case GET -> Root / LongVar(id) as token              => getUser(id)(token)
       case DELETE -> Root as token                         => deleteUser(token.id)(token)
       case DELETE -> Root / LongVar(id) as token           => deleteUser(id)(token)
       case req @ POST -> Root as token                     => createUser(req)
       case DELETE -> Root / LongVar(id) / "cache" as token => deleteUserFromCache(id)(token)
     })
+
+  private def listUsers(
+      filters: Map[String, String]
+  )(token: Token): IO[Response[IO]] = for {
+    users <- userLogic.searchUsers(filters)
+    allowedUsers <- IO.pure(
+      users.filter(user => token.user.userPermission.isValid(user.id.toString))
+    )
+    response <- Ok(allowedUsers)
+  } yield response
 
   private def getUser(id: Long)(token: Token): IO[Response[IO]] = for {
     _ <- IO.raiseWhen(
@@ -61,7 +71,7 @@ private case class UserRoute(
       )
       response <- Ok(user)
     } yield response
-    
+
   private def deleteUserFromCache(id: Long)(token: Token): IO[Response[IO]] = for {
     _ <- IO.raiseWhen(id != token.user.id && !token.user.userPermission.isValid(id.toString))(
       MissingPermissionException("Cannot remove user from cache")
