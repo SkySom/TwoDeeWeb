@@ -25,8 +25,8 @@ private case class CharacterRoute(
 
   private def routes: HttpRoutes[IO] =
     tokenLogic.middleware(AuthedRoutes.of[Token, IO] {
-      case GET -> Root :? IncludeSkills(includeSkills) as token =>
-        listCharacters(Map(), includeSkills)(token)
+      case req @ GET -> Root :? IncludeSkills(includeSkills) as token =>
+        listCharacters(req.req.params, includeSkills)(token)
       case GET -> Root / LongVar(id) :? IncludeSkills(includeSkills) as token =>
         getCharacter(id, includeSkills)(token)
       case req @ POST -> Root as token                              => createCharacter(req)

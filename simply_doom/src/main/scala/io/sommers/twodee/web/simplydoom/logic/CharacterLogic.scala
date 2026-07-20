@@ -20,7 +20,11 @@ trait CharacterLogic {
 }
 
 object CharacterLogic {
-  def apply(characterService: CharacterService, sheetsService: SheetsService, userLogic: UserLogic): IO[CharacterLogic] =
+  def apply(
+      characterService: CharacterService,
+      sheetsService: SheetsService,
+      userLogic: UserLogic
+  ): IO[CharacterLogic] =
     for {
       rowCache <- MemoryCache.ofConcurrentHashMap[IO, Long, CharacterRow](
         TimeSpec.fromDuration(8.hour)
@@ -58,7 +62,19 @@ case class CharacterLogicImpl(
   override def list(
       filters: Map[String, String],
       includeSkills: Boolean = false
-  ): IO[List[Character]] = IO.pure(List())
+  ): IO[List[Character]] = for {
+    characterRows <- characterService.searchCharacters(filters)
+    characters <- characterRows
+      .map(row =>
+        for {
+          sheetAdditions <- IO.both(
+            this.getPlotPoints(row.sheet),
+            if (includeSkills) this.getSkillsCached(row.sheet) else IO.pure(Map())
+          )
+        } yield row.toCharacter(sheetAdditions._1, sheetAdditions._2)
+      )
+      .sequence
+  } yield characters
 
   override def changePlotPoints(id: Long, change: Int): IO[Unit] = for {
     row <- getCharacterRow(id)

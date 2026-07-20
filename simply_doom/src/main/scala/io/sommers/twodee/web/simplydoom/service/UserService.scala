@@ -197,9 +197,9 @@ private case class UserServiceImpl(
          | doom_permissions = $doomPermission,
          | user_permissions = $userPermission,
          | token_permissions = $tokenPermission,
-         | update_at = CURRENT_TIMESTAMP 
+         | updated_at = CURRENT_TIMESTAMP
          | WHERE id = $id
-         """.update.run
+         """.stripMargin.update.run
       .transact(transactor)
 }
 
