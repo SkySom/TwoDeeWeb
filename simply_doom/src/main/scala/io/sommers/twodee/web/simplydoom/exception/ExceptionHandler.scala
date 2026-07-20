@@ -3,7 +3,7 @@ package io.sommers.twodee.web.simplydoom.exception
 import cats.Functor
 import cats.syntax.all.*
 import fs2.Stream
-import org.http4s.{Response, Status}
+import org.http4s.{InvalidMessageBodyFailure, Response, Status}
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 
 object ExceptionHandler {
@@ -17,6 +17,7 @@ object ExceptionHandler {
     case InvalidTokenException(message)      => returnError(Status.Unauthorized, message)(logger)
     case SheetException(message)        => returnError(Status.InternalServerError, message)(logger)
     case InvalidFieldException(message) => returnError(Status.BadRequest, message)(logger)
+    case InvalidMessageBodyFailure(details, cause) => returnError(Status.BadRequest, details)(logger)
     case e: Exception =>
       returnError(Status.InternalServerError, "Unprepared for exception", Some(e))(logger)
   }
