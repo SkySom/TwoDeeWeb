@@ -1,5 +1,6 @@
 http:
   port: 8080
+  hosts: []
 
 database:
   jdbcUrl: "jdbc:sqlite:twodee_doom.sqlite3"

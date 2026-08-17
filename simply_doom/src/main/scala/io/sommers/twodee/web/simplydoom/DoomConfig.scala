@@ -72,7 +72,8 @@ case class AuthConfig(
 )
 
 case class HTTPConfig(
-    port: Int
+    port: Int,
+    hosts: Set[String]
 )
 
 case class GoogleConfig(
