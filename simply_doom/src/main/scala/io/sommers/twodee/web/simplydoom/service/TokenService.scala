@@ -39,7 +39,7 @@ case class TokenServiceImpl(
   }
 
   override def getById(id: Long): IO[Option[(Long, String, Long, Boolean, Instant)]] =
-    sql"SELECT id, name, user_id, active, created_at from token"
+    sql"SELECT id, name, user_id, active, created_at from token where id = $id"
       .query[(Long, String, Long, Boolean, Long)]
       .option
       .transact(transactor)

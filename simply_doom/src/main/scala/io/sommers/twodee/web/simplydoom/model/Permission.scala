@@ -18,7 +18,7 @@ object Permission {
   def apply(values: String): Permission = values match {
     case value if value.isEmpty               => NonePermission
     case value if value.equalsIgnoreCase("*") => AllowAllPermission
-    case value => ListPermissions(value.split(",").map(_.trim).toList)
+    case value => ListPermissions(value.split(",").map(_.trim).distinct.toList)
   }
 
   given Get[Permission] = Get[String].map(Permission(_))
@@ -52,7 +52,7 @@ object NonePermission extends Permission {
 case class ListPermissions(permissions: List[String]) extends Permission {
   override def isValid(value: String): Boolean = permissions.contains(value)
 
-  override def withValue(value: String): Permission = this.copy(permissions.appended(value))
+  override def withValue(value: String): Permission = this.copy(permissions.appended(value).distinct)
 
   override def withoutValue(value: String): Permission = {
     val remainingPermissions = permissions.filterNot(_.equalsIgnoreCase(value))
