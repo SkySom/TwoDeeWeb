@@ -35,7 +35,7 @@ case class GoogleSheetsService(
 ) extends SheetsService {
   override def getSectionByName(sheet: String, name: String): IO[SheetSection] =
     for {
-      valueRange <- IO(
+      valueRange <- IO.blocking(
         sheets
           .spreadsheets()
           .values()
