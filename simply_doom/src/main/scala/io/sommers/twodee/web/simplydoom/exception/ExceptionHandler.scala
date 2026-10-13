@@ -34,6 +34,6 @@ object ExceptionHandler {
     )
   } yield Response(
     status = status,
-    body = Stream.emits("{\"message\": \"$message\"}".getBytes().toSeq)
+    body = Stream.emits(s"{\"message\": \"$message\"}".getBytes().toSeq)
   )
 }
