@@ -1,10 +1,10 @@
 import org.scalajs.linker.interface.ESVersion
 
-val circeVersion = "0.14.16"
-val http4sVersion = "0.23.34"
-val logbackVersion = "1.5.37"
+val circeVersion = "0.14.17"
+val http4sVersion = "0.23.38"
+val logbackVersion = "1.6.5"
 val sttpVersion = "4.0.19"
-val calibanVersion = "3.1.4"
+val calibanVersion = "3.2.0"
 
 lazy val backend = (project in file("./backend"))
   .dependsOn(shared.jvm)
@@ -76,9 +76,9 @@ lazy val simplyDoom = (project in file("simply_doom"))
     version := "0.0.1-SNAPSHOT",
     scalaVersion := "3.3.7",
     libraryDependencies ++= logbackDependencies ++ http4sDependencies ++ databaseDependencies ++ configDependencies ++
-      circeDependencies ++ googleDependencies ++ Seq(
+      circeDependencies ++ googleDependencies ++ testDependencies ++ Seq(
         "com.google.oauth-client" % "google-oauth-client-jetty" % "1.39.0",
-        "io.chrisdavenport" %% "mules" % "0.7.0"
+        "io.chrisdavenport" %% "mules" % "0.8.0"
       )
   )
 
@@ -96,16 +96,16 @@ val catsDependencies = Seq(
   "org.typelevel" %% "log4cats-slf4j" % "2.8.0"
 )
 val configDependencies = Seq(
-  "is.cir" %% "ciris" % "3.15.0",
-  "is.cir" %% "ciris-circe" % "3.15.0",
-  "is.cir" %% "ciris-circe-yaml" % "3.15.0"
+  "is.cir" %% "ciris" % "3.15.2",
+  "is.cir" %% "ciris-circe" % "3.15.2",
+  "is.cir" %% "ciris-circe-yaml" % "3.15.2"
 )
 val databaseDependencies = Seq(
   "org.tpolecat" %% "doobie-core" % "1.0.0-RC12",
   "org.tpolecat" %% "doobie-log4cats" % "1.0.0-RC12",
   "org.tpolecat" %% "doobie-hikari" % "1.0.0-RC12",
   "org.tpolecat" %% "doobie-scalatest" % "1.0.0-RC12" % "test",
-  "org.xerial" % "sqlite-jdbc" % "3.53.2.0"
+  "org.xerial" % "sqlite-jdbc" % "3.53.4.0"
 )
 val http4sDependencies = Seq(
   "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -119,8 +119,8 @@ val circeDependencies = Seq(
   "io.circe" %% "circe-parser" % circeVersion
 )
 val googleDependencies = Seq(
-  "com.google.api-client" % "google-api-client" % "2.9.0",
-  "com.google.apis" % "google-api-services-sheets" % "v4-rev20260610-2.0.0"
+  "com.google.api-client" % "google-api-client" % "2.9.1",
+  "com.google.apis" % "google-api-services-sheets" % "v4-rev20260930-2.0.0"
 )
 
 val calibanDependencies = Seq(
@@ -128,7 +128,12 @@ val calibanDependencies = Seq(
   "com.github.ghostdogpr" %% "caliban-http4s" % calibanVersion
 )
 
+//noinspection VulnerableLibrariesLocal
 val logbackDependencies = Seq(
   "ch.qos.logback" % "logback-classic" % logbackVersion,
   "org.fusesource.jansi" % "jansi" % "2.4.3"
+)
+
+val testDependencies = Seq(
+  "org.typelevel" %% "weaver-cats" % "0.13.0" % Test
 )
