@@ -7,5 +7,7 @@ case class RollOptions (
 }
 
 object RollOptions {
-  def apply(): RollOptions = RollOptions(2)
+  val default: RollOptions = RollOptions(2)
+  
+  def apply(): RollOptions = default
 }

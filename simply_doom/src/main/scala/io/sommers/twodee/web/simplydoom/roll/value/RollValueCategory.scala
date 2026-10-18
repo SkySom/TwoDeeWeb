@@ -22,5 +22,5 @@ trait RollValueCategory {
    * @param rollOptions The roll options used for the roll, most notably the amount of kept dice
    * @return the dice that are selected
    */
-  def pickValues(categoryDice: Seq[RollValue], rollOptions: RollOptions): Seq[RollValue]
+  def pickValues(categoryDice: Seq[RollValue], rollOptions: RollOptions = RollOptions()): Seq[RollValue]
 }
