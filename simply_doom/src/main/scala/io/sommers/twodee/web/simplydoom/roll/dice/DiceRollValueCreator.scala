@@ -18,5 +18,9 @@ object DiceRollValueCreator {
     EnhancedDiceRollValueCreator
   )
 
-  val letters: String = all.mkString("|")
+  val map: Map[String, DiceRollValueCreator] = all.map(creator => creator.id -> creator).toMap
+
+  val letters: String = all.map(_.id).mkString("|")
+
+  val lettersNoD: String = all.map(_.id.replace("d", "")).filterNot(_.isEmpty).mkString
 }

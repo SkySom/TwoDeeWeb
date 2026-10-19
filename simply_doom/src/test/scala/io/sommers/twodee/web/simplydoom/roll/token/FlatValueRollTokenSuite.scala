@@ -1,6 +1,12 @@
-package io.sommers.twodee.web.simplydoom.roll
+package io.sommers.twodee.web.simplydoom.roll.token
 
-import io.sommers.twodee.web.simplydoom.roll.token.{RollTokenError, FlatModifierRollToken, FlatModifierRollTokenProvider, RollTokenProvided, RollTokenSuggestion}
+import io.sommers.twodee.web.simplydoom.roll.token.{
+  FlatModifierRollToken,
+  FlatModifierRollTokenProvider,
+  RollTokenError,
+  RollTokenProvided,
+  RollTokenSuggestion
+}
 import weaver.SimpleIOSuite
 
 object FlatValueRollTokenSuite extends SimpleIOSuite {
@@ -29,14 +35,16 @@ object FlatValueRollTokenSuite extends SimpleIOSuite {
   }
 
   pureTest("Suggested string + should return RollTokenSuggestion") {
-    matches(FlatModifierRollTokenProvider.provide("+", true)) { case suggestion: RollTokenSuggestion =>
-      expect.same(RollTokenSuggestion((1 to 6).map(number => s"+$number")), suggestion)
+    matches(FlatModifierRollTokenProvider.provide("+", true)) {
+      case suggestion: RollTokenSuggestion =>
+        expect.same(RollTokenSuggestion((1 to 6).map(number => s"+$number")), suggestion)
     }
   }
 
   pureTest("Suggested string +1 should return FlatModifierRollToken") {
-    matches(FlatModifierRollTokenProvider.provide("+1", true)) { case token: FlatModifierRollToken =>
-      expect.same(FlatModifierRollToken(1), token)
+    matches(FlatModifierRollTokenProvider.provide("+1", true)) {
+      case token: FlatModifierRollToken =>
+        expect.same(FlatModifierRollToken(1), token)
     }
   }
 }

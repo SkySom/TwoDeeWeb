@@ -12,8 +12,10 @@ object DiceRollValueModifier {
     AssuredDiceRollValueModifier,
     ReducedDiceRollValueModifier
   )
+  
+  val map: Map[String, DiceRollValueModifier] = all.map(modifier => modifier.letter.toString -> modifier).toMap
 
-  val letters: String = all.mkString
+  val letters: String = all.map(_.letter).mkString
 }
 
 object AssuredDiceRollValueModifier extends DiceRollValueModifier {

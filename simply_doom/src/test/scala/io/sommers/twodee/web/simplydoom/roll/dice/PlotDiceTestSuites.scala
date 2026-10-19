@@ -38,6 +38,17 @@ object PlotDiceRollValueCategoryTestSuite extends SimpleIOSuite  {
       expect(diceRollValue.toFormula == "pd10")
     }
   }
+
+  test("Multiple plot die should return their value always") {
+    for {
+      dice <- PlotDiceRollValueCreator.create(10, StaticDiceRoller(2))
+      dice2 <- PlotDiceRollValueCreator.create(10, StaticDiceRoller(2))
+      selected <- IO.pure(PlotDiceRollValueCategory.pickValues(Seq(dice, dice2)))
+    } yield expect(selected.size == 2) and exists(selected) { diceRollValue =>
+      expect(diceRollValue.value == 2)
+      expect(diceRollValue.toFormula == "pd10")
+    }
+  }
 }
 
 object PlotDiceRollValueCreatorSuite extends SimpleIOSuite {
