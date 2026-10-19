@@ -1,6 +1,7 @@
 package io.sommers.twodee.web.simplydoom.roll.token
 
 import cats.effect.IO
+import io.sommers.twodee.web.simplydoom.roll.DiceRoller
 import io.sommers.twodee.web.simplydoom.roll.value.{FlatModifierRollValue, RollValue}
 
 import scala.util.matching.Regex
@@ -9,7 +10,10 @@ case class FlatModifierRollToken(
     amount: Int
 ) extends RollToken {
 
-  override def provide(): IO[Seq[RollValue]] = IO.pure(Seq(FlatModifierRollValue(amount)))
+  override def roll(diceRoller: DiceRoller): IO[Seq[RollValue]] =
+    IO.pure(Seq(FlatModifierRollValue(amount)))
+
+  override def toFormula: String = if (this.amount >= 0) s"+$amount" else s"-$amount"
 }
 
 object FlatModifierRollTokenProvider extends RollTokenProvider[FlatModifierRollToken] {
@@ -27,7 +31,7 @@ object FlatModifierRollTokenProvider extends RollTokenProvider[FlatModifierRollT
       case (symbolPattern(symbol, ""), true) =>
         RollTokenSuggestion((1 to 6).map(number => s"$symbol$number"))
       case (symbolPattern(symbol, rest), _) =>
-        ErroredRollToken(token, s"$token does not match +/- followed by numbers")
-      case (_, _) => NoRollToken
+        RollTokenError(token, s"$token does not match +/- followed by numbers")
+      case (_, _) => RollTokenEmpty
     }
 }

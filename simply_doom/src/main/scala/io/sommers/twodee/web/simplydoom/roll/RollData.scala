@@ -1,7 +1,8 @@
 package io.sommers.twodee.web.simplydoom.roll
 
-import cats.effect.std.Random
+import io.sommers.twodee.web.simplydoom.model.{Character, DoomPool}
 
-case class RollData (
-    depth: Int
+case class RollData(
+    depth: Int,
+    character: Option[Character]
 )

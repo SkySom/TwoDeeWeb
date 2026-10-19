@@ -9,3 +9,14 @@ trait DiceRollValueCreator {
 
   def create(faces: Int, diceRoller: DiceRoller): IO[DiceRollValue]
 }
+
+object DiceRollValueCreator {
+  val all: Seq[DiceRollValueCreator] = Seq(
+    RegularDiceRollValueCreator,
+    ChaosDiceRollValueCreator,
+    PlotDiceRollValueCreator,
+    EnhancedDiceRollValueCreator
+  )
+
+  val letters: String = all.mkString("|")
+}

@@ -1,19 +1,31 @@
 package io.sommers.twodee.web.simplydoom.roll.token
 
-import cats.effect.IO
-
 trait RollTokenProvider[T <: RollToken] {
   def provide(token: String, suggest: Boolean = false): RollTokenProvided[T]
 }
 
-type RollTokenProvided[T <: RollToken] = T | RollTokenSuggestion | NoRollToken | ErroredRollToken
+object RollTokenProvider {
+  val all: Seq[RollTokenProvider[_]] = Seq(
+    FlatModifierRollTokenProvider,
+    DiceRollTokenProvider
+  )
+
+  def provide(token: String, suggest: Boolean = true): RollTokenProvided[RollToken] = {
+    all
+      .map(_.provide(token, suggest))
+      .find(_ != RollTokenEmpty)
+      .getOrElse(RollTokenEmpty)
+  }
+}
+
+type RollTokenProvided[T <: RollToken] = T | RollTokenSuggestion | RollTokenEmpty | RollTokenError
 
 case class RollTokenSuggestion(
     suggestions: Seq[String]
 )
 
-trait NoRollToken {}
+trait RollTokenEmpty {}
 
-object NoRollToken extends NoRollToken
+object RollTokenEmpty extends RollTokenEmpty
 
-case class ErroredRollToken(token: String, message: String)
+case class RollTokenError(token: String, message: String)

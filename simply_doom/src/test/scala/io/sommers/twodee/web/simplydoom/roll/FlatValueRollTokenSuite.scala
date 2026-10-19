@@ -1,6 +1,6 @@
 package io.sommers.twodee.web.simplydoom.roll
 
-import io.sommers.twodee.web.simplydoom.roll.token.{ErroredRollToken, FlatModifierRollToken, FlatModifierRollTokenProvider, RollTokenProvided, RollTokenSuggestion}
+import io.sommers.twodee.web.simplydoom.roll.token.{RollTokenError, FlatModifierRollToken, FlatModifierRollTokenProvider, RollTokenProvided, RollTokenSuggestion}
 import weaver.SimpleIOSuite
 
 object FlatValueRollTokenSuite extends SimpleIOSuite {
@@ -17,14 +17,14 @@ object FlatValueRollTokenSuite extends SimpleIOSuite {
   }
 
   pureTest("String +-1 should return ErroredRollToken") {
-    matches(FlatModifierRollTokenProvider.provide("+-1")) { case error: ErroredRollToken =>
-      expect.same(ErroredRollToken("+-1", "+-1 does not match +/- followed by numbers"), error)
+    matches(FlatModifierRollTokenProvider.provide("+-1")) { case error: RollTokenError =>
+      expect.same(RollTokenError("+-1", "+-1 does not match +/- followed by numbers"), error)
     }
   }
 
   pureTest("String +d should return ErroredRollToken") {
-    matches(FlatModifierRollTokenProvider.provide("+d")) { case error: ErroredRollToken =>
-      expect.same(ErroredRollToken("+d", "+d does not match +/- followed by numbers"), error)
+    matches(FlatModifierRollTokenProvider.provide("+d")) { case error: RollTokenError =>
+      expect.same(RollTokenError("+d", "+d does not match +/- followed by numbers"), error)
     }
   }
 
