@@ -52,9 +52,10 @@ object DiceRollTokenProvider extends RollTokenProvider[DiceRollToken] {
       case (fullPattern(number, modifier, creator, faces), true) if faces == "2" =>
         RollTokenSuggestion(Seq(s"${token}0"))
       case (fullPattern(number, modifier, creator, faces), _) =>
+        val parsedNumber = if (number.isEmpty) 1 else number.toInt
         DiceRollValueCreator.map
           .get(creator)
-          .map(DiceRollToken(_, number.toInt, faces.toInt, DiceRollValueModifier.map.get(modifier)))
+          .map(DiceRollToken(_, parsedNumber, faces.toInt, DiceRollValueModifier.map.get(modifier)))
           .getOrElse(RollTokenError(token, s"$creator is not a valid dice"))
       case (suggestPattern(number, "", "", "", ""), true) =>
         RollTokenSuggestion(dice.map(faces => s"${number}d$faces"))

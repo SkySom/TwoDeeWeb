@@ -15,7 +15,9 @@ object DiceRollValueCreator {
     RegularDiceRollValueCreator,
     ChaosDiceRollValueCreator,
     PlotDiceRollValueCreator,
-    EnhancedDiceRollValueCreator
+    EnhancedDiceRollValueCreator,
+    AssistanceDiceRollValueCreator,
+    KeptDiceRollValueCreator
   )
 
   val map: Map[String, DiceRollValueCreator] = all.map(creator => creator.id -> creator).toMap
