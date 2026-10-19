@@ -7,13 +7,13 @@ import scala.annotation.tailrec
 
 case class FormulaReader(
     formula: String,
-    suggest: Boolean,
-    rollData: RollData
+    suggest: Boolean = false,
+    rollData: RollData = RollData()
 ) {
   def read(): FormulaReadResult = {
     val formulaTokens = formula
       .split(" ")
-      .filter(_.isEmpty)
+      .filterNot(_.isEmpty)
       .toSeq
 
     formulaTokens match {
@@ -29,8 +29,8 @@ case class FormulaReader(
       tokens: Seq[String]
   ): FormulaReadResult = tokens match {
     case Nil          => currentFormulaResult
-    case head :: Nil  => currentFormulaResult :+ readToken(head, this.suggest)
-    case head :: tail => readTokens(currentFormulaResult :+ readToken(head, false), tail)
+    case head +: Nil  => currentFormulaResult :+ readToken(head, this.suggest)
+    case head +: tail => readTokens(currentFormulaResult :+ readToken(head, false), tail)
   }
 
   private def readToken(currentToken: String, suggestToken: Boolean): TokenReadResult = {
