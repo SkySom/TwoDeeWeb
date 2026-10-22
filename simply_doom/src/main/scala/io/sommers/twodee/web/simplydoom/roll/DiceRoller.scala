@@ -20,3 +20,9 @@ case class RandomDiceRoller(
     roll <- random.nextIntBounded(faces)
   } yield roll + 1
 }
+
+object RandomDiceRoller {
+  def apply(): IO[RandomDiceRoller] = for {
+    random <- Random.scalaUtilRandom[IO]
+  } yield RandomDiceRoller(random)
+}
