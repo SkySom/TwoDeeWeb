@@ -17,7 +17,7 @@ case class DiceRollToken(
   override def roll(roller: DiceRoller): IO[Seq[RollValue]] = for {
     original <- IO.parSequence {
       LazyList
-        .from(1 until number)
+        .from(1 until number + 1)
         .map(_ => diceRollValueCreator.create(faces, roller))
     }
   } yield modifier.fold(original)(_.modify(original))
