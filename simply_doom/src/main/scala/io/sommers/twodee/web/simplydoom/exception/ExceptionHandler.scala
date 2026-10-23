@@ -17,7 +17,8 @@ object ExceptionHandler {
     case InvalidTokenException(message)      => returnError(Status.Unauthorized, message)(logger)
     case SheetException(message)        => returnError(Status.InternalServerError, message)(logger)
     case InvalidFieldException(message) => returnError(Status.BadRequest, message)(logger)
-    case InvalidMessageBodyFailure(details, cause) => returnError(Status.BadRequest, details)(logger)
+    case InvalidMessageBodyFailure(details, cause) =>
+      returnError(Status.BadRequest, details, cause)(logger)
     case e: Exception =>
       returnError(Status.InternalServerError, "Unprepared for exception", Some(e))(logger)
   }
@@ -25,11 +26,11 @@ object ExceptionHandler {
   private def returnError[F[_]: Functor](
       status: Status,
       message: String,
-      exception: Option[Exception] = None
+      throwable: Option[Throwable] = None
   )(
       logger: Logger[F]
   ): F[Response[F]] = for {
-    _ <- exception.fold(logger.info(s"Returned $status with message $message"))(
+    _ <- throwable.fold(logger.info(s"Returned $status with message $message"))(
       logger.error(_)(message)
     )
   } yield Response(
