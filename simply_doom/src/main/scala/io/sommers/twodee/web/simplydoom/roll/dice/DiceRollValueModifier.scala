@@ -36,7 +36,7 @@ object ReducedDiceRollValueModifier extends DiceRollValueModifier {
     rollValues.map { rollValue =>
       rollValue.copy(
         value = 1,
-        toFormula = s"a${rollValue.toFormula}"
+        toFormula = s"r${rollValue.toFormula}"
       )
     }
 }
