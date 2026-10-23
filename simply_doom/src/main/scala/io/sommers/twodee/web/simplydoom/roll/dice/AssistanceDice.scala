@@ -5,7 +5,7 @@ import io.sommers.twodee.web.simplydoom.roll.value.{DiceRollValue, RollValue, Ro
 import io.sommers.twodee.web.simplydoom.roll.{DiceRoller, RollOptions}
 
 object AssistanceDiceRollValueCreator extends DiceRollValueCreator {
-  override val id: String = "d"
+  override val id: String = "sd"
 
   override def create(faces: Int, roller: DiceRoller): IO[DiceRollValue] = for {
     roll <- roller.roll(faces)
