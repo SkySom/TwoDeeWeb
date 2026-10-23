@@ -13,6 +13,6 @@ object FormulaReaderTestSuite extends SimpleIOSuite {
   }
 
   pureTest("6d6 +3 3a should return Suggestion") {
-    expect.same(FormulaReadSuggest(Seq("")), FormulaReader("1d6 3d8 + d8").read())
+    expect.same(FormulaReadSuggest(4.to(12, 2).map(faces => s"6d6 +3 3ad$faces")), FormulaReader("6d6 +3 3a", true).read())
   }
 }

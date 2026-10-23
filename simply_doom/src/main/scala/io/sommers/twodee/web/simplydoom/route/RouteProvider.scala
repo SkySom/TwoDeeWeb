@@ -20,6 +20,12 @@ object RouteProvider {
       ),
       DoomPoolRoute(logicProvider.tokenLogic, logicProvider.doomPoolLogic),
       HealthRoute(),
+      RollRoute(
+        logicProvider.tokenLogic,
+        logicProvider.characterLogic,
+        logicProvider.doomPoolLogic,
+        logicProvider.rollLogic
+      ),
       TokenRoute(logicProvider.tokenLogic, logicProvider.userLogic),
       UserRoute(logicProvider.tokenLogic, logicProvider.userLogic)
     )
@@ -30,6 +36,7 @@ private case class RouterProviderImpl(
     characterRoutes: HttpRoutes[IO],
     doomPoolRoutes: HttpRoutes[IO],
     healthRoute: HttpRoutes[IO],
+    rollRoutes: HttpRoutes[IO],
     tokenRoutes: HttpRoutes[IO],
     userRoutes: HttpRoutes[IO]
 ) extends RouteProvider {
@@ -38,6 +45,7 @@ private case class RouterProviderImpl(
       "/character" -> characterRoutes,
       "/doompool" -> doomPoolRoutes,
       "/health" -> healthRoute,
+      "/roll" -> rollRoutes,
       "/token" -> tokenRoutes,
       "/user" -> userRoutes
     )
