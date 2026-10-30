@@ -31,7 +31,7 @@ object RollCategoryResult {
 
     RollCategoryResult(
       category,
-      rollValues.map(rollValue => RollValueSelect(rollValue, pickedRollValues.contains(rollValue)))
+      rollValues.map(rollValue => RollValueSelect(rollValue, pickedRollValues.exists(_ eq rollValue)))
     )
   }
 }
