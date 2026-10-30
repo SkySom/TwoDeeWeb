@@ -5,7 +5,6 @@ import io.circe.generic.auto.*
 import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, DoomPoolLogic, RollLogic, TokenLogic}
 import io.sommers.twodee.web.simplydoom.model.{RollRequest, Token}
-import io.sommers.twodee.web.simplydoom.roll.RollOptions
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe.jsonOf
 import org.http4s.dsl.io.*
@@ -43,7 +42,12 @@ private case class RollRoute(
         } else IO.raiseError(MissingPermissionException(s"Cannot get doom $id"))
       )
       .getOrElse(IO.pure(None))
-    rollResult <- rollLogic.roll(rollRequest.formula, rollRequest.options, character, doomPool)
+    rollResult <- rollLogic.roll(
+      rollRequest.formula,
+      rollRequest.options,
+      character,
+      doomPool
+    )
     response <- Ok(rollResult)
   } yield response
 }
