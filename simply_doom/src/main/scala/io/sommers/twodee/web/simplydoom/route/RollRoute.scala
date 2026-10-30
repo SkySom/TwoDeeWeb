@@ -2,6 +2,7 @@ package io.sommers.twodee.web.simplydoom.route
 
 import cats.effect.IO
 import io.circe.generic.auto.*
+import io.sommers.twodee.web.simplydoom.exception.MissingPermissionException
 import io.sommers.twodee.web.simplydoom.logic.{CharacterLogic, DoomPoolLogic, RollLogic, TokenLogic}
 import io.sommers.twodee.web.simplydoom.model.{RollRequest, Token}
 import io.sommers.twodee.web.simplydoom.roll.RollOptions
@@ -25,10 +26,22 @@ private case class RollRoute(
   private def postRoll(authRequest: AuthedRequest[IO, Token]): IO[Response[IO]] = for {
     rollRequest <- authRequest.req.as[RollRequest]
     character <- rollRequest.characterId
-      .map(characterLogic.getById(_, true).map(Some(_)))
+      .map(id =>
+        if (authRequest.context.user.characterPermissions.isValid(id.toString)) {
+          characterLogic
+            .getById(id, true)
+            .map(Some(_))
+        } else IO.raiseError(MissingPermissionException(s"Cannot get character $id"))
+      )
       .getOrElse(IO.pure(None))
     doomPool <- rollRequest.doomPoolId
-      .map(doomPoolLogic.getById(_).map(Some(_)))
+      .map(id =>
+        if (authRequest.context.user.doomPermission.isValid(id.toString)) {
+          doomPoolLogic
+            .getById(id)
+            .map(Some(_))
+        } else IO.raiseError(MissingPermissionException(s"Cannot get doom $id"))
+      )
       .getOrElse(IO.pure(None))
     rollResult <- rollLogic.roll(rollRequest.formula, rollRequest.options, character, doomPool)
     response <- Ok(rollResult)
